@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LegalCopilot - Integrated Frontend + Backend</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        
+        .header { 
+            background: white; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            position: relative;
+        }
+        
+        .status { 
+            position: absolute; right: 20px; top: 50%; transform: translateY(-50%);
+            padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold;
+        }
+        .status.connected { background: #d4edda; color: #155724; }
+        .status.disconnected { background: #f8d7da; color: #721c24; }
+        
+        .container { display: flex; height: calc(100vh - 100px); }
+        
+        .sidebar { width: 30%; background: white; padding: 20px; border-right: 1px solid #ddd; overflow-y: auto; }
+        .main { width: 70%; background: white; padding: 20px; overflow-y: auto; }
+        
+        .upload { text-align: center; padding: 40px; }
+        .file-input { display: block; margin: 20px auto; padding: 12px; width: 300px; }
+        .btn { background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; }
+        .btn:hover { background: #0056b3; }
+        .btn:disabled { background: #6c757d; cursor: not-allowed; }
+        
+        .loading { 
+            display: none; text-align: center; padding: 20px; 
+            background: #e3f2fd; border-radius: 8px; margin: 20px 0;
+        }
+        
+        .clause-section h3 { margin-bottom: 15px; color: #007bff; }
+        
+        .clause-item { 
+            padding: 12px; margin: 8px 0; background: #f8f9fa; border-radius: 6px; cursor: pointer;
+            border-left: 4px solid #dee2e6; transition: all 0.2s ease;
+        }
+        .clause-item:hover { background: #e9ecef; transform: translateX(2px); }
+        .clause-item.active { background: #e7f3ff; border-left-color: #007bff; }
+        
+        .risk-high { border-left-color: #dc3545; }
+        .risk-medium { border-left-color: #ffc107; }
+        .risk-low { border-left-color: #28a745; }
+        
+        .confidence { 
+            font-size: 11px; color: #6c757d; 
+            background: #f1f3f4; padding: 2px 6px; border-radius: 10px; 
+        }
+        
+        .page { margin-bottom: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: white; }
+        .page-header { font-weight: bold; color: #007bff; margin-bottom: 15px; }
+        
+        /* Enhanced highlighting */
+        .article-highlight { background: yellow; padding: 2px 4px; border-radius: 3px; font-weight: bold; cursor: pointer; }
+        .clause-highlight { background: #ffeb3b; padding: 3px 6px; border-radius: 4px; margin: 2px; display: inline-block; cursor: pointer; }
+        .clause-highlight.high { background: #ffcdd2; }
+        .clause-highlight.medium { background: #fff3cd; }
+        .clause-highlight.low { background: #d4edda; }
+        
+        .analysis-panel { 
+            background: #f8f9fa; padding: 15px; border-radius: 8px; margin: 15px 0;
+            border-left: 4px solid #007bff;
+        }
+        
+        .hidden { display: none; }
+        
+        .ai-analysis { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; padding: 15px; border-radius: 8px; margin: 10px 0;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .pulsing { animation: pulse 1.5s infinite; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏛️ LegalCopilot - Integrated Version</h1>
+        <p>Frontend + Backend Integration</p>
+        <div id="connectionStatus" class="status disconnected">Backend: Checking...</div>
+    </div>
+
+    <div id="uploadSection" class="upload">
+        <h2>Upload PDF Contract</h2>
+        <input type="file" id="fileInput" class="file-input" accept=".pdf" />
+        <button id="processBtn" class="btn">Analyze Contract</button>
+        <div id="loadingIndicator" class="loading">
+            <div class="pulsing">🔍 Processing contract...</div>
+            <p>Extracting text and analyzing clauses with AI</p>
+        </div>
+    </div>
+
+    <div id="mainLayout" class="container hidden">
+        <div class="sidebar">
+            <div class="clause-section">
+                <h3>🎯 AI-Detected Clauses</h3>
+                <div id="detectedClauses"></div>
+            </div>
+            
+            <div class="clause-section">
+                <h3>📋 Basic Articles</h3>
+                <div class="clause-item" data-article="1.5">
+                    <strong>Article 1.5</strong><br>
+                    <small>Drag Along Right</small>
+                </div>
+                <div class="clause-item" data-article="2.1">
+                    <strong>Article 2.1</strong><br>
+                    <small>Governance</small>
+                </div>
+                <div class="clause-item" data-article="3.6">
+                    <strong>Article 3.6</strong><br>
+                    <small>Tag Along Right</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="main">
+            <div id="aiAnalysis" class="ai-analysis hidden">
+                <h3>🤖 AI Contract Analysis</h3>
+                <div id="analysisContent">Loading...</div>
+            </div>
+            
+            <div id="documentContent">
+                <!-- PDF content will load here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Backend API base URL
+        const API_BASE = 'http://localhost:5001';
+        
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        // Check backend connection
+        async function checkBackendConnection() {
+            const statusDiv = document.getElementById('connectionStatus');
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                if (response.ok) {
+                    statusDiv.textContent = 'Backend: Connected ✅';
+                    statusDiv.className = 'status connected';
+                    return true;
+                }
+            } catch (error) {
+                console.warn('Backend not available:', error);
+            }
+            
+            statusDiv.textContent = 'Backend: Offline ❌';
+            statusDiv.className = 'status disconnected';
+            return false;
+        }
+
+        // Enhanced PDF processing with backend integration
+        document.getElementById('processBtn').addEventListener('click', async function() {
+            const fileInput = document.getElementById('fileInput');
+            const uploadSection = document.getElementById('uploadSection');
+            const mainLayout = document.getElementById('mainLayout');
+            const documentContent = document.getElementById('documentContent');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const processBtn = document.getElementById('processBtn');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Please select a PDF file');
+                return;
+            }
+            
+            console.log('📄 Starting enhanced PDF analysis...');
+            loadingIndicator.style.display = 'block';
+            processBtn.disabled = true;
+            
+            try {
+                const file = fileInput.files[0];
+                const arrayBuffer = await file.arrayBuffer();
+                
+                // Step 1: Load PDF with PDF.js
+                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+                console.log(`✅ PDF loaded: ${pdf.numPages} pages`);
+                
+                let fullDocumentText = '';
+                let allText = '';
+                
+                // Step 2: Extract all text
+                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                    console.log(`📖 Processing page ${pageNum}...`);
+                    const page = await pdf.getPage(pageNum);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    
+                    fullDocumentText += pageText + '\n';
+                    
+                    // Simple highlighting for basic articles
+                    let highlightedText = pageText;
+                    highlightedText = highlightedText.replace(/\b1\.5\b/g, '<span class="article-highlight" data-article="1.5">1.5</span>');
+                    highlightedText = highlightedText.replace(/\b2\.1\b/g, '<span class="article-highlight" data-article="2.1">2.1</span>');
+                    highlightedText = highlightedText.replace(/\b3\.6\b/g, '<span class="article-highlight" data-article="3.6">3.6</span>');
+                    
+                    allText += `
+                        <div class="page" id="page-${pageNum}">
+                            <div class="page-header">Page ${pageNum}</div>
+                            <div>${highlightedText}</div>
+                        </div>
+                    `;
+                }
+                
+                documentContent.innerHTML = allText;
+                
+                // Step 3: Backend AI Analysis (if available)
+                const backendAvailable = await checkBackendConnection();
+                if (backendAvailable) {
+                    console.log('🤖 Sending to backend for AI analysis...');
+                    await performBackendAnalysis(file, fullDocumentText);
+                } else {
+                    console.log('⚠️ Backend offline, using frontend-only mode');
+                    document.getElementById('aiAnalysis').innerHTML = `
+                        <div class="analysis-panel">
+                            <h3>⚠️ Backend Offline</h3>
+                            <p>AI analysis unavailable. Basic article highlighting active.</p>
+                            <p>Start Flask backend: <code>python app.py</code></p>
+                        </div>
+                    `;
+                    document.getElementById('aiAnalysis').classList.remove('hidden');
+                }
+                
+                // Step 4: Show results
+                uploadSection.classList.add('hidden');
+                mainLayout.classList.remove('hidden');
+                console.log('✅ Analysis complete');
+                
+            } catch (error) {
+                console.error('❌ Error:', error);
+                documentContent.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            } finally {
+                loadingIndicator.style.display = 'none';
+                processBtn.disabled = false;
+            }
+        });
+
+        // Backend analysis function
+        async function performBackendAnalysis(file, documentText) {
+            try {
+                // Call contract analysis API
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const analysisResponse = await fetch(`${API_BASE}/api/analyze`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (analysisResponse.ok) {
+                    const analysisResult = await analysisResponse.json();
+                    displayAIAnalysis(analysisResult.analysis);
+                }
+                
+                // Call clause detection API
+                const clauseResponse = await fetch(`${API_BASE}/analyze-clauses`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        document_text: documentText,
+                        clause_types: ['governance', 'drag_along', 'tag_along', 'priority_allocation', 'non_compete']
+                    })
+                });
+                
+                if (clauseResponse.ok) {
+                    const clauseResult = await clauseResponse.json();
+                    displayDetectedClauses(clauseResult.detected_clauses);
+                    highlightClauses(clauseResult.detected_clauses);
+                }
+                
+            } catch (error) {
+                console.error('Backend analysis error:', error);
+            }
+        }
+
+        // Display AI analysis
+        function displayAIAnalysis(analysis) {
+            const analysisContent = document.getElementById('analysisContent');
+            const aiAnalysis = document.getElementById('aiAnalysis');
+            
+            analysisContent.innerHTML = `<pre style="white-space: pre-wrap; font-family: inherit;">${analysis}</pre>`;
+            aiAnalysis.classList.remove('hidden');
+        }
+
+        // Display detected clauses
+        function displayDetectedClauses(clauses) {
+            const container = document.getElementById('detectedClauses');
+            
+            if (!clauses || clauses.length === 0) {
+                container.innerHTML = '<p style="color: #6c757d; font-style: italic;">No specific clauses detected</p>';
+                return;
+            }
+            
+            const clauseHTML = clauses.map((clause, index) => `
+                <div class="clause-item risk-${clause.risk_level}" data-clause="${index}">
+                    <strong>${clause.type.replace('_', ' ').toUpperCase()}</strong>
+                    <span class="confidence">${Math.round(clause.confidence * 100)}%</span><br>
+                    <small>${clause.context.substring(0, 60)}...</small>
+                </div>
+            `).join('');
+            
+            container.innerHTML = clauseHTML;
+        }
+
+        // Highlight clauses in text
+        function highlightClauses(clauses) {
+            clauses.forEach((clause, index) => {
+                const regex = new RegExp(clause.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                const highlightClass = `clause-highlight ${clause.risk_level}`;
+                
+                document.querySelectorAll('.page div').forEach(pageDiv => {
+                    pageDiv.innerHTML = pageDiv.innerHTML.replace(regex, 
+                        `<span class="${highlightClass}" data-clause="${index}">${clause.text}</span>`
+                    );
+                });
+            });
+        }
+        
+        // Click-to-scroll functionality
+        document.addEventListener('click', function(e) {
+            // Handle sidebar clause clicks
+            if (e.target.closest('.clause-item')) {
+                const clauseItem = e.target.closest('.clause-item');
+                
+                // Remove active states
+                document.querySelectorAll('.clause-item').forEach(item => item.classList.remove('active'));
+                clauseItem.classList.add('active');
+                
+                // Handle basic articles
+                const articleNum = clauseItem.dataset.article;
+                if (articleNum) {
+                    const highlighted = document.querySelector(`[data-article="${articleNum}"]`);
+                    if (highlighted) {
+                        highlighted.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        console.log(`✅ Scrolled to article ${articleNum}`);
+                    }
+                }
+                
+                // Handle AI-detected clauses
+                const clauseIndex = clauseItem.dataset.clause;
+                if (clauseIndex) {
+                    const highlighted = document.querySelector(`[data-clause="${clauseIndex}"]`);
+                    if (highlighted) {
+                        highlighted.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        // Flash effect
+                        highlighted.style.transform = 'scale(1.1)';
+                        setTimeout(() => highlighted.style.transform = 'scale(1)', 300);
+                    }
+                }
+            }
+        });
+        
+        // Initialize
+        console.log('🚀 Integrated version ready');
+        checkBackendConnection();
+    </script>
+</body>
+</html>

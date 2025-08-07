@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LegalCopilot - Minimal PDF Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; }
+        
+        .header {
+            background: white; padding: 20px; text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;
+        }
+        
+        .container {
+            display: flex; height: calc(100vh - 100px);
+        }
+        
+        .left-panel {
+            width: 20%; background: white; padding: 20px;
+            border-right: 1px solid #ddd; overflow-y: auto;
+        }
+        
+        .main-panel {
+            width: 50%; background: white; padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .right-panel {
+            width: 30%; background: white; padding: 20px;
+            border-left: 1px solid #ddd;
+        }
+        
+        .upload-section {
+            text-align: center; padding: 40px;
+        }
+        
+        .file-input {
+            display: block; margin: 20px auto; padding: 12px;
+            font-size: 16px; width: 300px;
+        }
+        
+        .btn {
+            background: #6366f1; color: white; padding: 12px 24px;
+            border: none; border-radius: 6px; cursor: pointer;
+        }
+        
+        .clause-item {
+            padding: 12px; margin-bottom: 8px; background: #f9f9f9;
+            border-radius: 6px; cursor: pointer; border-left: 4px solid #ddd;
+        }
+        
+        .clause-item:hover { background: #f0f0f0; }
+        .clause-item.high { border-left-color: #ef4444; }
+        .clause-item.medium { border-left-color: #f97316; }
+        .clause-item.low { border-left-color: #22c55e; }
+        
+        .document-content { 
+            background: white; padding: 20px; 
+            border-radius: 8px; line-height: 1.6;
+        }
+        
+        .page { margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #eee; }
+        .page-header { background: #f5f5f5; padding: 8px; border-radius: 4px; margin-bottom: 15px; font-weight: bold; }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏛️ LegalCopilot - Minimal PDF Converter</h1>
+        <p>Basic PDF processing without complex features</p>
+    </div>
+
+    <div id="uploadSection" class="upload-section">
+        <h2>Upload PDF File</h2>
+        <input type="file" id="fileInput" class="file-input" accept=".pdf" />
+        <button id="processBtn" class="btn">Process PDF (Basic Mode)</button>
+    </div>
+
+    <div id="mainLayout" class="container hidden">
+        <div class="left-panel">
+            <h3>Navigation</h3>
+            <div id="clausesList">
+                <div class="clause-item high">
+                    <div><strong>Governance Compromise</strong></div>
+                    <div style="font-size: 0.9em; color: #666;">Article 2.1 • HIGH</div>
+                </div>
+                <div class="clause-item medium">
+                    <div><strong>Non-Compete</strong></div>
+                    <div style="font-size: 0.9em; color: #666;">Article 7.1-7.2 • MEDIUM</div>
+                </div>
+                <div class="clause-item high">
+                    <div><strong>Drag Along Right</strong></div>
+                    <div style="font-size: 0.9em; color: #666;">Article 4.1 • HIGH</div>
+                </div>
+                <div class="clause-item low">
+                    <div><strong>Tag Along Right</strong></div>
+                    <div style="font-size: 0.9em; color: #666;">Article 3.6 • LOW</div>
+                </div>
+                <div class="clause-item medium">
+                    <div><strong>Priority Allocation</strong></div>
+                    <div style="font-size: 0.9em; color: #666;">Article 5.2 • MEDIUM</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-panel">
+            <div class="document-content" id="documentContent">
+                <!-- Converted content will appear here -->
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <h3>Document Info</h3>
+            <div id="documentInfo">
+                <p>Select a clause to view details</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        document.getElementById('processBtn').addEventListener('click', async function() {
+            const fileInput = document.getElementById('fileInput');
+            const uploadSection = document.getElementById('uploadSection');
+            const mainLayout = document.getElementById('mainLayout');
+            const documentContent = document.getElementById('documentContent');
+            const documentInfo = document.getElementById('documentInfo');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Please select a PDF file first');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            console.log('Processing:', file.name, file.size);
+            
+            try {
+                // Show processing message
+                documentContent.innerHTML = '<p>🔄 Processing PDF...</p>';
+                uploadSection.classList.add('hidden');
+                mainLayout.classList.remove('hidden');
+                
+                // Load PDF
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+                console.log('PDF loaded:', pdf.numPages, 'pages');
+                
+                // Process only first 3 pages to avoid crashes
+                let htmlContent = '';
+                const maxPages = Math.min(3, pdf.numPages);
+                
+                for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+                    console.log(`Processing page ${pageNum}...`);
+                    const page = await pdf.getPage(pageNum);
+                    const textContent = await page.getTextContent();
+                    
+                    htmlContent += `<div class="page">
+                        <div class="page-header">Page ${pageNum}</div>`;
+                    
+                    // Simple text extraction without complex processing
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    const paragraphs = pageText.split(/\.\s+/).filter(p => p.trim().length > 20);
+                    
+                    paragraphs.forEach(paragraph => {
+                        if (paragraph.trim()) {
+                            htmlContent += `<p>${paragraph.trim()}.</p>`;
+                        }
+                    });
+                    
+                    htmlContent += '</div>';
+                }
+                
+                // Display content
+                documentContent.innerHTML = htmlContent;
+                
+                // Update document info
+                documentInfo.innerHTML = `
+                    <div style="background: #f0f9ff; padding: 15px; border-radius: 6px;">
+                        <h4>✅ PDF Processed</h4>
+                        <p><strong>File:</strong> ${file.name}</p>
+                        <p><strong>Total Pages:</strong> ${pdf.numPages}</p>
+                        <p><strong>Processed:</strong> ${maxPages} pages</p>
+                        <p><strong>Size:</strong> ${Math.round(file.size / 1024)} KB</p>
+                    </div>
+                `;
+                
+                console.log('✅ Processing complete');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                documentContent.innerHTML = `<p style="color: red;">❌ Error: ${error.message}</p>`;
+            }
+        });
+        
+        console.log('🚀 Minimal PDF converter ready');
+    </script>
+</body>
+</html>

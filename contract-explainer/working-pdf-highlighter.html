@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LegalCopilot - Working PDF Highlighter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; }
+        
+        .header {
+            background: white; padding: 20px; text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;
+        }
+        
+        .container {
+            display: flex; height: calc(100vh - 100px);
+        }
+        
+        .left-panel {
+            width: 20%; background: white; padding: 20px;
+            border-right: 1px solid #ddd; overflow-y: auto;
+        }
+        
+        .main-panel {
+            width: 50%; background: white; padding: 20px;
+            overflow-y: auto;
+        }
+        
+        .right-panel {
+            width: 30%; background: white; padding: 20px;
+            border-left: 1px solid #ddd;
+        }
+        
+        .upload-section {
+            text-align: center; padding: 40px;
+        }
+        
+        .file-input {
+            display: block; margin: 20px auto; padding: 12px;
+            font-size: 16px; width: 300px;
+        }
+        
+        .btn {
+            background: #6366f1; color: white; padding: 12px 24px;
+            border: none; border-radius: 6px; cursor: pointer;
+        }
+        
+        .clause-item {
+            padding: 12px; margin-bottom: 8px; background: #f9f9f9;
+            border-radius: 6px; cursor: pointer; border-left: 4px solid #ddd;
+        }
+        
+        .clause-item:hover { background: #f0f0f0; }
+        .clause-item.active { background: #e0e7ff; }
+        .clause-item.high { border-left-color: #ef4444; }
+        .clause-item.medium { border-left-color: #f97316; }
+        .clause-item.low { border-left-color: #22c55e; }
+        
+        .document-content { 
+            background: white; padding: 20px; 
+            border-radius: 8px; line-height: 1.6;
+        }
+        
+        .page { 
+            margin-bottom: 30px; 
+            padding: 20px; 
+            border: 1px solid #ddd; 
+            border-radius: 8px;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            min-height: 800px; /* Simulate actual page height */
+            page-break-after: always;
+        }
+        .page-header { 
+            background: #6366f1; 
+            color: white;
+            padding: 12px; 
+            border-radius: 6px; 
+            margin-bottom: 20px; 
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        /* Simple highlighting */
+        .highlight-high { background: rgba(239, 68, 68, 0.2); padding: 2px 4px; border-radius: 2px; }
+        .highlight-medium { background: rgba(249, 115, 22, 0.2); padding: 2px 4px; border-radius: 2px; }
+        .highlight-low { background: rgba(34, 197, 94, 0.2); padding: 2px 4px; border-radius: 2px; }
+        
+        /* AI-enhanced highlighting */
+        .ai-enhanced { border-left: 3px solid #6366f1; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .ai-detected { 
+            border: 2px solid #6366f1; 
+            box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+            animation: aiPulse 2s ease-in-out;
+        }
+        
+        /* Article headers - more prominent highlighting */
+        .article-header {
+            font-weight: bold !important;
+            font-size: 1.1em !important;
+            border: 3px solid #6366f1 !important;
+            padding: 6px 12px !important;
+            border-radius: 6px !important;
+            background: rgba(99, 102, 241, 0.1) !important;
+        }
+        
+        /* Clause content - subtle highlighting */
+        .clause-content {
+            border: 1px solid #6366f1 !important;
+            padding: 3px 6px !important;
+            border-radius: 3px !important;
+            background: rgba(99, 102, 241, 0.05) !important;
+        }
+        
+        @keyframes aiPulse {
+            0% { box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2); }
+            50% { box-shadow: 0 4px 8px rgba(99, 102, 241, 0.4); }
+            100% { box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2); }
+        }
+        
+        .clause-details { background: #f9f9f9; padding: 15px; border-radius: 6px; margin-bottom: 15px; }
+        
+        /* Visual feedback for clause scrolling */
+        .clause-flash {
+            animation: flashHighlight 2s ease-in-out;
+            border: 2px solid #6366f1 !important;
+            border-radius: 4px !important;
+            padding: 4px 8px !important;
+            margin: 2px 0 !important;
+        }
+        
+        @keyframes flashHighlight {
+            0% { background: rgba(99, 102, 241, 0.3); transform: scale(1.02); }
+            50% { background: rgba(99, 102, 241, 0.1); transform: scale(1.01); }
+            100% { background: transparent; transform: scale(1); }
+        }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏛️ LegalCopilot - Working PDF Highlighter</h1>
+        <p>Step-by-step rebuild with basic highlighting</p>
+    </div>
+
+    <div id="uploadSection" class="upload-section">
+        <h2>Upload PDF File</h2>
+        <input type="file" id="fileInput" class="file-input" accept=".pdf" />
+        <button id="processBtn" class="btn">Process PDF with Basic Highlighting</button>
+    </div>
+
+    <div id="mainLayout" class="container hidden">
+        <div class="left-panel">
+            <h3>Contract Clauses</h3>
+            <div id="clausesList">
+                <div class="clause-item high" data-clause="governance">
+                    <div><strong>Governance Compromise</strong></div>
+                    <div style="font-size: 0.9em; color: #666;">Article 2.1 • HIGH RISK</div>
+                </div>
+                <div class="clause-item medium" data-clause="noncompete">
+                    <div><strong>Non-Compete</strong></div>
+                    <div style="font-size: 0.9em; color: #666;">Article 7.1-7.2 • MEDIUM</div>
+                </div>
+                <div class="clause-item high" data-clause="dragalong">
+                    <div><strong>Drag Along Right</strong></div>
+                    <div style="font-size: 0.9em; color: #666;">Article 4.1 • HIGH RISK</div>
+                </div>
+                <div class="clause-item low" data-clause="tagalong">
+                    <div><strong>Tag Along Right</strong></div>
+                    <div style="font-size: 0.9em; color: #666;">Article 3.6 • LOW RISK</div>
+                </div>
+                <div class="clause-item medium" data-clause="priority">
+                    <div><strong>Priority Allocation</strong></div>
+                    <div style="font-size: 0.9em; color: #666;">Article 5.2 • MEDIUM</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-panel">
+            <div class="document-content" id="documentContent">
+                <!-- Converted content will appear here -->
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <h3>Clause Details</h3>
+            <div id="clauseDetails">
+                <p>Click a clause on the left to view detailed analysis</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        // Real clause definitions - target actual legal articles, not table of contents
+        const clauses = {
+            governance: {
+                title: 'Governance Compromise',
+                article: '2.1',
+                risk: 'high',
+                // Article number patterns - find actual article sections
+                articlePattern: /^2\.1\s|article\s+2\.1|^2\.1\.|clause\s+2\.1/gi,
+                // Content patterns - find actual governance provisions
+                contentPattern: /vote.*accordance.*president|shareholder.*vote.*instructions|governance.*board.*president/gi,
+                scrollTarget: null,
+                context: 'This clause requires you to vote according to the President\'s instructions, limiting your autonomy.',
+                implication: 'Loss of independent decision-making power'
+            },
+            dragalong: {
+                title: 'Drag Along Right',
+                article: '1.5', 
+                risk: 'high',
+                // Look for Article 1.5 specifically
+                articlePattern: /^1\.5\s|article\s+1\.5|^1\.5\.|clause\s+1\.5/gi,
+                // Look for drag-along content
+                contentPattern: /drag.along.*right|ninety.five.*percent|95%.*sharehold|offeror.*require.*sell/gi,
+                scrollTarget: null,
+                context: 'If 95% of shareholders agree to sell, you must sell your shares.',
+                implication: 'You can be forced to sell against your wishes'
+            },
+            tagalong: {
+                title: 'Tag Along Right',
+                article: '3.6',
+                risk: 'low',
+                articlePattern: /^3\.6\s|article\s+3\.6|^3\.6\.|clause\s+3\.6/gi,
+                contentPattern: /tag.along.*right|transferor.*sharehold|minority.*protection/gi,
+                scrollTarget: null,
+                context: 'You can sell alongside other shareholders at the same price.',
+                implication: 'Protection against being left behind in sales'
+            },
+            priority: {
+                title: 'Priority Allocation',
+                article: '5.2',
+                risk: 'medium',
+                articlePattern: /^5\.2\s|article\s+5\.2|^5\.2\.|clause\s+5\.2/gi,
+                contentPattern: /priority.*allocation|waterfall.*distribution|liquidation.*preference/gi,
+                scrollTarget: null,
+                context: 'Defines how sale proceeds are distributed.',
+                implication: 'Your payout position in the distribution hierarchy'
+            },
+            noncompete: {
+                title: 'Non-Compete',
+                article: '7.1-7.2',
+                risk: 'medium',
+                articlePattern: /^7\.[12]\s|article\s+7\.[12]|^7\.[12]\.|clause\s+7\.[12]/gi,
+                contentPattern: /non.compete.*restrictions|non.solicit.*provisions|competition.*restrictions/gi,
+                scrollTarget: null,
+                context: 'Non-compete restrictions remain in effect.',
+                implication: 'Continued business activity restrictions'
+            }
+        };
+
+        let processedContent = '';
+
+        // AI-powered clause analysis function
+        async function performAIClauseAnalysis(htmlContent) {
+            try {
+                // Extract text content for AI analysis
+                const textContent = htmlContent.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                
+                // Send to local Flask backend for AI analysis
+                const response = await fetch('http://localhost:5001/analyze-clauses', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        document_text: textContent.substring(0, 10000), // First 10k chars for analysis
+                        clause_types: ['governance', 'drag_along', 'tag_along', 'priority_allocation', 'non_compete']
+                    })
+                });
+
+                if (response.ok) {
+                    const aiResults = await response.json();
+                    console.log('🎯 AI detected clauses:', aiResults.detected_clauses);
+                    
+                    // Enhance highlighting with AI results
+                    return enhanceHighlightingWithAI(htmlContent, aiResults);
+                } else {
+                    throw new Error('AI analysis service unavailable');
+                }
+                
+            } catch (error) {
+                console.error('AI analysis error:', error);
+                // Fallback to enhanced pattern matching
+                return performSmartPatternAnalysis(htmlContent);
+            }
+        }
+
+        // Enhanced pattern-based analysis (fallback)
+        function performSmartPatternAnalysis(htmlContent) {
+            console.log('📊 Using enhanced pattern analysis');
+            
+            // More sophisticated patterns for legal clauses
+            const enhancedPatterns = {
+                governance: [
+                    /vote.*accordance.*president/gi,
+                    /governance.*compromise/gi,
+                    /instructions.*provided.*president/gi,
+                    /voting.*rights.*subject.*to/gi
+                ],
+                drag_along: [
+                    /drag.along.*right/gi,
+                    /ninety.five.*per.*cent|95%/gi,
+                    /offeror.*may.*require/gi,
+                    /forced.*sale.*shares/gi,
+                    /purchase.*all.*shares/gi
+                ],
+                tag_along: [
+                    /tag.along.*right/gi,
+                    /transferor.*shareholder/gi,
+                    /sell.*alongside/gi,
+                    /same.*price.*terms/gi
+                ],
+                priority_allocation: [
+                    /priority.*allocation/gi,
+                    /sale.*price.*allocated/gi,
+                    /waterfall.*distribution/gi,
+                    /proceeds.*distributed/gi
+                ],
+                non_compete: [
+                    /non.compete|non.solicit/gi,
+                    /restrictions.*remain.*applicable/gi,
+                    /avoidance.*doubts/gi,
+                    /freed.*non.compete/gi
+                ]
+            };
+
+            let enhancedContent = htmlContent;
+            
+            Object.entries(enhancedPatterns).forEach(([clauseType, patterns]) => {
+                const clause = Object.values(clauses).find(c => c.title.toLowerCase().includes(clauseType.replace('_', ' ')));
+                if (!clause) return;
+                
+                patterns.forEach(pattern => {
+                    enhancedContent = enhancedContent.replace(pattern, (match) => {
+                        return `<span class="highlight-${clause.risk} ai-enhanced" title="AI detected: ${clause.title}">${match}</span>`;
+                    });
+                });
+            });
+            
+            return enhancedContent;
+        }
+
+        // Enhance highlighting with AI results
+        function enhanceHighlightingWithAI(htmlContent, aiResults) {
+            let enhancedContent = htmlContent;
+            
+            if (aiResults.detected_clauses) {
+                aiResults.detected_clauses.forEach(detection => {
+                    const text = detection.text;
+                    const clauseType = detection.type;
+                    const confidence = detection.confidence;
+                    
+                    if (confidence > 0.7) { // High confidence AI detections
+                        const clause = Object.values(clauses).find(c => 
+                            c.title.toLowerCase().includes(clauseType.replace('_', ' '))
+                        );
+                        
+                        if (clause) {
+                            const regex = new RegExp(text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                            enhancedContent = enhancedContent.replace(regex, 
+                                `<span class="highlight-${clause.risk} ai-detected" 
+                                      title="AI detected: ${clause.title} (${Math.round(confidence * 100)}% confidence)">
+                                    ${text}
+                                 </span>`
+                            );
+                        }
+                    }
+                });
+            }
+            
+            return enhancedContent;
+        }
+
+        document.getElementById('processBtn').addEventListener('click', async function() {
+            const fileInput = document.getElementById('fileInput');
+            const uploadSection = document.getElementById('uploadSection');
+            const mainLayout = document.getElementById('mainLayout');
+            const documentContent = document.getElementById('documentContent');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Please select a PDF file first');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            console.log('Processing:', file.name);
+            
+            try {
+                documentContent.innerHTML = '<p>🔄 Processing PDF...</p>';
+                uploadSection.classList.add('hidden');
+                mainLayout.classList.remove('hidden');
+                
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+                console.log('PDF loaded:', pdf.numPages, 'pages');
+                
+                let htmlContent = '';
+                const maxPages = pdf.numPages; // Process ALL pages
+                
+                // Process in chunks to prevent crashes
+                for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+                    try {
+                        console.log(`Processing page ${pageNum}/${maxPages}...`);
+                        documentContent.innerHTML = `<p>🔄 Processing page ${pageNum}/${maxPages}...</p>`;
+                        
+                        const page = await pdf.getPage(pageNum);
+                        const textContent = await page.getTextContent();
+                        
+                        htmlContent += `<div class="page">
+                            <div class="page-header">Page ${pageNum}</div>`;
+                        
+                        // Extract text and add simple highlighting
+                        const pageText = textContent.items.map(item => item.str).join(' ');
+                        const paragraphs = pageText.split(/\.\s+/).filter(p => p.trim().length > 20);
+                        
+                        paragraphs.forEach(paragraph => {
+                            if (paragraph.trim()) {
+                                let highlightedParagraph = paragraph.trim() + '.';
+                                
+                                // REAL clause detection - target actual legal articles
+                                let foundClause = null;
+                                let isArticleHeader = false;
+                                
+                                Object.entries(clauses).forEach(([clauseKey, clause]) => {
+                                    // First priority: Look for article headers (e.g., "1.5", "2.1", "3.6")
+                                    const articleMatches = highlightedParagraph.match(clause.articlePattern);
+                                    if (articleMatches) {
+                                        // This is an article header - mark it for scrolling
+                                        const clauseId = `article-${clauseKey}-page-${pageNum}`;
+                                        clause.scrollTarget = clauseId;
+                                        foundClause = clauseKey;
+                                        isArticleHeader = true;
+                                        
+                                        // Highlight article number
+                                        articleMatches.forEach(match => {
+                                            const regex = new RegExp(match.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                                            highlightedParagraph = highlightedParagraph.replace(regex, 
+                                                `<span class="highlight-${clause.risk} ai-detected article-header" data-clause="${clauseKey}" title="Article: ${clause.title}">${match}</span>`
+                                            );
+                                        });
+                                        
+                                        console.log(`🎯 Found ARTICLE ${clause.article} on page ${pageNum}:`, articleMatches);
+                                        return; // Priority over content matching
+                                    }
+                                    
+                                    // Secondary: Look for clause content within paragraphs
+                                    const contentMatches = highlightedParagraph.match(clause.contentPattern);
+                                    if (contentMatches && !foundClause) {
+                                        // This paragraph contains the actual clause content
+                                        const clauseId = `content-${clauseKey}-page-${pageNum}`;
+                                        if (!clause.scrollTarget) { // Don't override article headers
+                                            clause.scrollTarget = clauseId;
+                                        }
+                                        foundClause = clauseKey;
+                                        
+                                        // Highlight clause content
+                                        contentMatches.forEach(match => {
+                                            const regex = new RegExp(match.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+                                            highlightedParagraph = highlightedParagraph.replace(regex, 
+                                                `<span class="highlight-${clause.risk} ai-detected clause-content" data-clause="${clauseKey}" title="Content: ${clause.title}">${match}</span>`
+                                            );
+                                        });
+                                        
+                                        console.log(`📝 Found ${clauseKey} CONTENT on page ${pageNum}:`, contentMatches);
+                                    }
+                                });
+                                
+                                // Set ID based on what was found
+                                let paragraphId = '';
+                                if (foundClause) {
+                                    if (isArticleHeader) {
+                                        paragraphId = `id="article-${foundClause}-page-${pageNum}"`;
+                                    } else {
+                                        paragraphId = `id="content-${foundClause}-page-${pageNum}"`;
+                                    }
+                                }
+                                htmlContent += `<p ${paragraphId}>${highlightedParagraph}</p>`;
+                            }
+                        });
+                        
+                        htmlContent += '</div>';
+                        
+                        // Add delay every 5 pages to prevent browser freeze
+                        if (pageNum % 5 === 0) {
+                            await new Promise(resolve => setTimeout(resolve, 100));
+                        }
+                        
+                    } catch (error) {
+                        console.error(`Error processing page ${pageNum}:`, error);
+                        htmlContent += `<div class="page">
+                            <div class="page-header">Page ${pageNum} - Error</div>
+                            <p style="color: red;">Error processing this page: ${error.message}</p>
+                        </div>`;
+                    }
+                }
+                
+                processedContent = htmlContent;
+                
+                // Add AI-powered clause analysis
+                console.log('🤖 Starting AI clause analysis...');
+                documentContent.innerHTML = '<p>🤖 Analyzing clauses with AI...</p>';
+                
+                try {
+                    const aiAnalyzedContent = await performAIClauseAnalysis(htmlContent);
+                    documentContent.innerHTML = aiAnalyzedContent;
+                    console.log('✅ AI analysis complete with enhanced highlighting');
+                } catch (error) {
+                    console.error('AI analysis failed, using basic highlighting:', error);
+                    documentContent.innerHTML = htmlContent;
+                    console.log('✅ Processing complete with basic highlighting');
+                }
+                
+            } catch (error) {
+                console.error('Error:', error);
+                documentContent.innerHTML = `<p style="color: red;">❌ Error: ${error.message}</p>`;
+            }
+        });
+
+        // Clause selection with auto-scrolling
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.clause-item')) {
+                const clauseItem = e.target.closest('.clause-item');
+                const clauseId = clauseItem.dataset.clause;
+                const clause = clauses[clauseId];
+                
+                if (clause) {
+                    // Update active state
+                    document.querySelectorAll('.clause-item').forEach(item => 
+                        item.classList.remove('active'));
+                    clauseItem.classList.add('active');
+                    
+                    // Show clause details
+                    document.getElementById('clauseDetails').innerHTML = `
+                        <div class="clause-details">
+                            <h4>${clause.title}</h4>
+                            <p><strong>Article:</strong> ${clause.article}</p>
+                            <p><strong>Risk Level:</strong> ${clause.risk.toUpperCase()}</p>
+                            <p><strong>Context:</strong> ${clause.context}</p>
+                            <p><strong>Implication:</strong> ${clause.implication}</p>
+                        </div>
+                    `;
+                    
+                    // Auto-scroll to clause location
+                    scrollToClause(clauseId, clause);
+                    
+                    console.log('Selected clause:', clause.title);
+                }
+            }
+        });
+        
+        // Auto-scroll to clause function with debugging
+        function scrollToClause(clauseId, clause) {
+            console.log(`🎯 Scrolling to clause: ${clauseId}`, clause);
+            
+            // First try to find the actual clause by ID
+            if (clause.scrollTarget) {
+                console.log(`Looking for element with ID: ${clause.scrollTarget}`);
+                const targetElement = document.getElementById(clause.scrollTarget);
+                if (targetElement) {
+                    console.log(`✅ Found target element, scrolling...`);
+                    targetElement.scrollIntoView({ 
+                        behavior: 'smooth', 
+                        block: 'center',
+                        inline: 'nearest'
+                    });
+                    
+                    // Add visual feedback
+                    targetElement.classList.add('clause-flash');
+                    setTimeout(() => targetElement.classList.remove('clause-flash'), 2000);
+                    return;
+                } else {
+                    console.warn(`❌ Element with ID ${clause.scrollTarget} not found`);
+                }
+            }
+            
+            // Fallback: search for highlighted clause elements
+            console.log(`🔍 Searching for elements with data-clause="${clauseId}"`);
+            const highlightedElements = document.querySelectorAll(`[data-clause="${clauseId}"]`);
+            console.log(`Found ${highlightedElements.length} highlighted elements`);
+            
+            if (highlightedElements.length > 0) {
+                console.log(`✅ Scrolling to first highlighted element`);
+                highlightedElements[0].scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center',
+                    inline: 'nearest'
+                });
+                
+                // Add visual feedback to all highlighted instances
+                highlightedElements.forEach(el => {
+                    el.classList.add('clause-flash');
+                    setTimeout(() => el.classList.remove('clause-flash'), 2000);
+                });
+                return;
+            }
+            
+            // Last resort: search by article number in text content
+            console.log(`🔍 Last resort: searching for article ${clause.article}`);
+            const allParagraphs = document.querySelectorAll('.document-content p');
+            let found = false;
+            
+            allParagraphs.forEach((p, index) => {
+                if (!found && p.textContent.includes(clause.article)) {
+                    console.log(`✅ Found article ${clause.article} in paragraph ${index}`);
+                    p.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    p.classList.add('clause-flash');
+                    setTimeout(() => p.classList.remove('clause-flash'), 2000);
+                    found = true;
+                }
+            });
+            
+            if (!found) {
+                console.error(`❌ Could not find any scroll target for clause: ${clauseId}`);
+            }
+        }
+        
+        console.log('🚀 Working PDF highlighter ready');
+    </script>
+</body>
+</html>

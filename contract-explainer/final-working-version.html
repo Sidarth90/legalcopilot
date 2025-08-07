@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ContractIQ - Professional Contract Review</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            /* Juro Colors */
+            --juro-purple: #6366f1;
+            --juro-purple-dark: #4f46e5;
+            --juro-purple-light: #e0e7ff;
+            --juro-green: #10b981;
+            --juro-red: #ef4444;
+            --juro-orange: #f59e0b;
+            --juro-gray-50: #f9fafb;
+            --juro-gray-100: #f3f4f6;
+            --juro-gray-200: #e5e7eb;
+            --juro-gray-300: #d1d5db;
+            --juro-gray-400: #9ca3af;
+            --juro-gray-500: #6b7280;
+            --juro-gray-600: #4b5563;
+            --juro-gray-700: #374151;
+            --juro-gray-800: #1f2937;
+            --juro-gray-900: #111827;
+            --juro-white: #ffffff;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+            line-height: 1.5;
+            color: var(--juro-gray-900);
+            background: var(--juro-gray-50);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* Header - Juro Style */
+        .header {
+            background: var(--juro-white);
+            border-bottom: 1px solid var(--juro-gray-200);
+            padding: 0 2rem;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .logo {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--juro-purple), var(--juro-purple-dark));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .brand {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--juro-gray-900);
+            letter-spacing: -0.025em;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+            letter-spacing: -0.025em;
+        }
+        
+        .btn-primary {
+            background: var(--juro-purple);
+            color: var(--juro-white);
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        
+        .btn-primary:hover {
+            background: var(--juro-purple-dark);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-secondary {
+            background: var(--juro-white);
+            color: var(--juro-gray-700);
+            border: 1px solid var(--juro-gray-300);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--juro-gray-50);
+            border-color: var(--juro-gray-400);
+        }
+        
+        /* Upload Section */
+        .upload-section {
+            min-height: calc(100vh - 64px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        
+        .upload-container {
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .upload-title {
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: var(--juro-gray-900);
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.05em;
+            line-height: 1.2;
+        }
+        
+        .upload-subtitle {
+            font-size: 1.125rem;
+            color: var(--juro-gray-600);
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+        }
+        
+        .upload-area {
+            background: var(--juro-white);
+            border: 2px dashed var(--juro-gray-300);
+            border-radius: 12px;
+            padding: 2.5rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--juro-purple);
+            background: var(--juro-purple-light);
+        }
+        
+        .upload-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 1rem;
+            background: var(--juro-gray-100);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        
+        .upload-text {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--juro-gray-900);
+            margin-bottom: 0.5rem;
+        }
+        
+        .upload-hint {
+            font-size: 0.875rem;
+            color: var(--juro-gray-500);
+            margin-bottom: 1.5rem;
+        }
+        
+        .upload-btn {
+            background: var(--juro-purple);
+            color: var(--juro-white);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.15s ease;
+        }
+        
+        .upload-btn:hover {
+            background: var(--juro-purple-dark);
+        }
+        
+        /* Main Layout - Fixed Two Panel Design */
+        .main-layout {
+            height: calc(100vh - 64px);
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            background: var(--juro-gray-50);
+        }
+        
+        /* Left Panel - Analysis (Independently Scrollable) */
+        .analysis-panel {
+            background: var(--juro-white);
+            border-right: 1px solid var(--juro-gray-200);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .analysis-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--juro-gray-200);
+            background: var(--juro-white);
+            flex-shrink: 0;
+        }
+        
+        .analysis-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--juro-gray-900);
+            margin-bottom: 0.25rem;
+            letter-spacing: -0.025em;
+        }
+        
+        .analysis-subtitle {
+            font-size: 0.875rem;
+            color: var(--juro-gray-500);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-indicator {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--juro-green);
+        }
+        
+        /* Scrollable Analysis Content */
+        .analysis-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+        
+        /* Contract Summary Section */
+        .summary-section {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--juro-gray-100);
+        }
+        
+        .summary-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--juro-gray-900);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .contract-summary {
+            background: var(--juro-gray-50);
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+        
+        .summary-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .summary-label {
+            font-size: 0.875rem;
+            color: var(--juro-gray-600);
+            font-weight: 500;
+        }
+        
+        .summary-value {
+            font-size: 0.875rem;
+            color: var(--juro-gray-900);
+            font-weight: 600;
+        }
+        
+        /* Risk Overview */
+        .risk-overview {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .risk-card {
+            background: var(--juro-gray-50);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .risk-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        
+        .risk-number.high { color: var(--juro-red); }
+        .risk-number.medium { color: var(--juro-orange); }
+        .risk-number.low { color: var(--juro-gray-500); }
+        
+        .risk-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--juro-gray-600);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        /* Red Flags Section */
+        .flags-section {
+            padding: 1.5rem;
+        }
+        
+        .flags-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--juro-gray-900);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .flag-item {
+            display: flex;
+            gap: 0.75rem;
+            padding: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            margin-bottom: 0.75rem;
+            border: 1px solid var(--juro-gray-200);
+            background: var(--juro-white);
+        }
+        
+        .flag-item:hover {
+            background: var(--juro-gray-50);
+            border-color: var(--juro-gray-300);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .flag-item.active {
+            background: var(--juro-purple-light);
+            border-color: var(--juro-purple);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .flag-number {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--juro-white);
+            flex-shrink: 0;
+        }
+        
+        .flag-number.high { background: var(--juro-red); }
+        .flag-number.medium { background: var(--juro-orange); }
+        .flag-number.low { background: var(--juro-gray-400); }
+        
+        .flag-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .flag-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--juro-gray-900);
+            margin-bottom: 0.25rem;
+            line-height: 1.4;
+        }
+        
+        .flag-description {
+            font-size: 0.75rem;
+            color: var(--juro-gray-600);
+            line-height: 1.4;
+            margin-bottom: 0.5rem;
+        }
+        
+        .flag-context {
+            font-size: 0.75rem;
+            color: var(--juro-gray-500);
+            font-style: italic;
+            background: var(--juro-gray-50);
+            padding: 0.5rem;
+            border-radius: 4px;
+            border-left: 3px solid var(--juro-gray-300);
+        }
+        
+        .flag-page {
+            font-size: 0.625rem;
+            color: var(--juro-purple);
+            font-weight: 500;
+            margin-top: 0.5rem;
+            text-transform: uppercase;
+        }
+        
+        /* Right Panel - Independent Scrollable PDF Viewer */
+        .pdf-panel {
+            display: flex;
+            flex-direction: column;
+            background: var(--juro-gray-100);
+            overflow: hidden;
+        }
+        
+        .pdf-header {
+            background: var(--juro-white);
+            border-bottom: 1px solid var(--juro-gray-200);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 56px;
+            flex-shrink: 0;
+        }
+        
+        .pdf-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .pdf-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--juro-gray-900);
+        }
+        
+        .pdf-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .control-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--juro-gray-300);
+            background: var(--juro-white);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-size: 0.75rem;
+            color: var(--juro-gray-600);
+        }
+        
+        .control-btn:hover {
+            background: var(--juro-gray-50);
+            border-color: var(--juro-gray-400);
+        }
+        
+        .zoom-display {
+            font-size: 0.75rem;
+            color: var(--juro-gray-500);
+            font-weight: 500;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        /* Independent Scrollable PDF Viewer Container */
+        .pdf-viewer {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: auto;
+            background: var(--juro-gray-200);
+            display: flex;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+        
+        .pdf-container {
+            background: var(--juro-white);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-radius: 8px;
+            overflow: hidden;
+            max-width: 100%;
+            width: fit-content;
+            position: relative;
+        }
+        
+        .pdf-page {
+            background: var(--juro-white);
+            position: relative;
+            border-bottom: 1px solid var(--juro-gray-200);
+        }
+        
+        .pdf-page:last-child {
+            border-bottom: none;
+        }
+        
+        .pdf-page canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+        
+        /* Page Numbers */
+        .page-number {
+            position: absolute;
+            bottom: -1.5rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        /* Processing Overlay */
+        .processing-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .processing-content {
+            text-align: center;
+            max-width: 400px;
+        }
+        
+        .processing-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--juro-gray-200);
+            border-top-color: var(--juro-purple);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+        
+        .processing-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--juro-gray-900);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.025em;
+        }
+        
+        .processing-subtitle {
+            font-size: 0.875rem;
+            color: var(--juro-gray-500);
+        }
+        
+        /* Animations */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 350px 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: 50vh 1fr;
+            }
+            
+            .brand {
+                display: none;
+            }
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo-section">
+            <div class="logo">C</div>
+            <div class="brand">ContractIQ</div>
+        </div>
+        <div class="header-actions">
+            <button id="newContractBtn" class="btn btn-secondary hidden">
+                New Contract
+            </button>
+            <button id="shareBtn" class="btn btn-primary hidden">
+                Share Results
+            </button>
+        </div>
+    </header>
+
+    <!-- Upload Section -->
+    <div id="uploadSection" class="upload-section">
+        <div class="upload-container">
+            <h1 class="upload-title">Professional Contract Review</h1>
+            <p class="upload-subtitle">
+                Upload your contract for comprehensive AI analysis with executive summary and risk assessment
+            </p>
+            
+            <div id="uploadArea" class="upload-area">
+                <div class="upload-icon">⚖️</div>
+                <div class="upload-text">Drop your contract here</div>
+                <div class="upload-hint">or click to browse files</div>
+                <button id="uploadBtn" class="upload-btn">Choose File</button>
+                <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+            </div>
+        </div>
+    </div>
+
+    <!-- Processing Overlay -->
+    <div id="processingOverlay" class="processing-overlay hidden">
+        <div class="processing-content">
+            <div class="processing-spinner"></div>
+            <h3 class="processing-title">Analyzing Contract</h3>
+            <p class="processing-subtitle">Generating executive summary and identifying risks...</p>
+        </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div id="mainLayout" class="main-layout hidden">
+        <!-- Left Panel - Independent Scrollable Analysis -->
+        <div class="analysis-panel">
+            <div class="analysis-header">
+                <h2 class="analysis-title">Contract Analysis</h2>
+                <div class="analysis-subtitle">
+                    <div class="status-indicator"></div>
+                    <span id="analysisStatus">Analysis complete</span>
+                </div>
+            </div>
+            
+            <div class="analysis-content">
+                <!-- Contract Summary -->
+                <div class="summary-section">
+                    <h3 class="summary-title">Executive Summary</h3>
+                    <div class="contract-summary">
+                        <div class="summary-item">
+                            <span class="summary-label">Contract Type</span>
+                            <span class="summary-value" id="contractType">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Pages</span>
+                            <span class="summary-value" id="pageCount">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Key Parties</span>
+                            <span class="summary-value" id="keyParties">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="summary-label">Overall Risk</span>
+                            <span class="summary-value" id="overallRisk">-</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Risk Overview -->
+                    <div class="risk-overview">
+                        <div class="risk-card">
+                            <div id="highRiskCount" class="risk-number high">0</div>
+                            <div class="risk-label">High Risk</div>
+                        </div>
+                        <div class="risk-card">
+                            <div id="mediumRiskCount" class="risk-number medium">0</div>
+                            <div class="risk-label">Medium Risk</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Red Flags -->
+                <div class="flags-section">
+                    <h3 class="flags-title">Critical Issues Found</h3>
+                    <div id="flagsList">
+                        <!-- Flags will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel - Independent Scrollable PDF Viewer -->
+        <div class="pdf-panel">
+            <div class="pdf-header">
+                <div class="pdf-info">
+                    <span>📄</span>
+                    <span id="pdfTitle" class="pdf-title">Contract Document</span>
+                </div>
+                <div class="pdf-controls">
+                    <button class="control-btn" onclick="zoomOut()" title="Zoom Out">−</button>
+                    <span class="zoom-display" id="zoomDisplay">100%</span>
+                    <button class="control-btn" onclick="zoomIn()" title="Zoom In">+</button>
+                    <button class="control-btn" onclick="fitWidth()" title="Fit Width">⚡</button>
+                </div>
+            </div>
+            
+            <div class="pdf-viewer" id="pdfViewer">
+                <div class="pdf-container" id="pdfContainer">
+                    <!-- PDF pages will be rendered here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('ContractIQ Professional loading...');
+        
+        // Initialize PDF.js
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+        
+        // Global state
+        let currentPDF = null;
+        let currentZoom = 1.3;
+        let redFlags = [];
+        let activeFlag = null;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing...');
+            
+            const uploadArea = document.getElementById('uploadArea');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const fileInput = document.getElementById('fileInput');
+            
+            // Upload handlers
+            uploadArea.addEventListener('click', () => fileInput.click());
+            uploadBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fileInput.click();
+            });
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) {
+                    processFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    processFile(e.target.files[0]);
+                }
+            });
+            
+            // Other buttons
+            document.getElementById('newContractBtn')?.addEventListener('click', resetInterface);
+            document.getElementById('shareBtn')?.addEventListener('click', shareResults);
+        });
+        
+        // Process uploaded file
+        async function processFile(file) {
+            if (!file.type.includes('pdf')) {
+                alert('Please upload a PDF file.');
+                return;
+            }
+            
+            try {
+                showProcessing();
+                console.log('Processing file:', file.name);
+                
+                // Load PDF
+                const pdfDoc = await loadPDF(file);
+                currentPDF = pdfDoc;
+                console.log(`PDF loaded: ${pdfDoc.numPages} pages`);
+                
+                // Extract text for analysis
+                const fullText = await extractFullText(pdfDoc);
+                console.log(`Extracted ${fullText.length} characters`);
+                
+                // Generate comprehensive analysis
+                const analysis = await generateSmartAnalysis(fullText, pdfDoc.numPages);
+                redFlags = analysis.redFlags;
+                
+                // Render results
+                await renderResults(file.name, analysis);
+                
+                setTimeout(() => {
+                    hideProcessing();
+                    showMainInterface();
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error processing file:', error);
+                hideProcessing();
+                alert('Error processing file: ' + error.message);
+            }
+        }
+        
+        // Load PDF document
+        function loadPDF(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async function() {
+                    try {
+                        const pdf = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
+                        resolve(pdf);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = () => reject(new Error('Failed to read file'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+        
+        // Extract text from all pages
+        async function extractFullText(pdf) {
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join(' ');
+                fullText += pageText + '\n\n';
+            }
+            return fullText;
+        }
+        
+        // Generate smart contract analysis
+        async function generateSmartAnalysis(text, numPages) {
+            console.log('Generating smart analysis...');
+            
+            // Detect contract type
+            const contractType = detectContractType(text);
+            
+            // Extract key parties
+            const keyParties = extractKeyParties(text);
+            
+            // Find actual red flags (not generic sections)
+            const foundRedFlags = findRealRedFlags(text);
+            
+            // Calculate overall risk
+            const overallRisk = calculateOverallRisk(foundRedFlags);
+            
+            console.log(`Analysis complete: ${foundRedFlags.length} red flags found`);
+            
+            return {
+                contractType,
+                numPages,
+                keyParties,
+                overallRisk,
+                redFlags: foundRedFlags
+            };
+        }
+        
+        // Detect contract type intelligently
+        function detectContractType(text) {
+            const lowerText = text.toLowerCase();
+            
+            if (lowerText.includes('employment') || lowerText.includes('employee')) {
+                return 'Employment Agreement';
+            } else if (lowerText.includes('shareholder') || lowerText.includes('equity') || lowerText.includes('bspce')) {
+                return 'Shareholder/Equity Agreement';
+            } else if (lowerText.includes('service') || lowerText.includes('consulting')) {
+                return 'Service Agreement';
+            } else if (lowerText.includes('lease') || lowerText.includes('rental')) {
+                return 'Lease Agreement';
+            } else if (lowerText.includes('license') || lowerText.includes('intellectual property')) {
+                return 'License Agreement';
+            } else if (lowerText.includes('partnership') || lowerText.includes('joint venture')) {
+                return 'Partnership Agreement';
+            } else {
+                return 'Commercial Agreement';
+            }
+        }
+        
+        // Extract key parties from contract
+        function extractKeyParties(text) {
+            // Look for common party patterns
+            const partyPatterns = [
+                /between\s+([A-Z][^,\n]+?)(?:\s+and\s+|\s*,)/gi,
+                /party.*?:\s*([A-Z][^,\n]+)/gi,
+                /company.*?:\s*([A-Z][^,\n]+)/gi
+            ];
+            
+            let parties = [];
+            partyPatterns.forEach(pattern => {
+                let match;
+                while ((match = pattern.exec(text)) !== null && parties.length < 3) {
+                    const party = match[1].trim().replace(/[()]/g, '');
+                    if (party.length > 2 && party.length < 100) {
+                        parties.push(party);
+                    }
+                }
+            });
+            
+            return parties.length > 0 ? parties.join(' & ') : 'Multiple Parties';
+        }
+        
+        // Find real red flags (not generic sections)
+        function findRealRedFlags(text) {
+            console.log('Finding real red flags...');
+            
+            const flagPatterns = [
+                {
+                    regex: /unlimited\s+liability/gi,
+                    title: '⚠️ Unlimited Liability',
+                    severity: 'high',
+                    description: 'You could be held responsible for unlimited damages - extremely risky',
+                    context: extractContext
+                },
+                {
+                    regex: /automatic(?:ally)?\s+renew(?:al|s)?/gi,
+                    title: '🔄 Automatic Renewal',
+                    severity: 'medium',
+                    description: 'Contract automatically renews without your explicit consent',
+                    context: extractContext
+                },
+                {
+                    regex: /drag.?along\s+rights?/gi,
+                    title: '🚨 Drag-Along Rights',
+                    severity: 'high',
+                    description: 'Majority shareholders can force you to sell your shares',
+                    context: extractContext
+                },
+                {
+                    regex: /non.?compete(?:\s+clause)?/gi,
+                    title: '🚫 Non-Compete Restriction',
+                    severity: 'medium',
+                    description: 'Restricts your ability to work with competitors or start similar business',
+                    context: extractContext
+                },
+                {
+                    regex: /indemnif(?:y|ication)/gi,
+                    title: '💰 Indemnification Clause',
+                    severity: 'medium',
+                    description: 'You may be required to pay legal costs and damages for the other party',
+                    context: extractContext
+                },
+                {
+                    regex: /liquidation\s+preference/gi,
+                    title: '💸 Liquidation Preference',
+                    severity: 'high',
+                    description: 'Affects the order you get paid when company is sold - could reduce your payout',
+                    context: extractContext
+                },
+                {
+                    regex: /tag.?along\s+rights?/gi,
+                    title: '📤 Tag-Along Rights',
+                    severity: 'medium',
+                    description: 'Allows minority shareholders to join in a sale - generally favorable',
+                    context: extractContext
+                },
+                {
+                    regex: /anti.?dilution/gi,
+                    title: '🔒 Anti-Dilution Protection',
+                    severity: 'medium',
+                    description: 'Protects investors from share dilution - may affect your ownership percentage',
+                    context: extractContext
+                },
+                {
+                    regex: /vesting\s+(?:schedule|period|acceleration)/gi,
+                    title: '⏰ Vesting Requirements',
+                    severity: 'medium',
+                    description: 'Your shares/options vest over time - leaving early may forfeit unvested portion',
+                    context: extractContext
+                },
+                {
+                    regex: /(?:termination|breach).*?(?:without\s+cause|immediate)/gi,
+                    title: '❌ Termination Without Cause',
+                    severity: 'medium',
+                    description: 'Contract can be terminated without specific reason',
+                    context: extractContext
+                }
+            ];
+            
+            function extractContext(match, text) {
+                const start = Math.max(0, match.index - 150);
+                const end = Math.min(text.length, match.index + match[0].length + 150);
+                return text.substring(start, end).trim();
+            }
+            
+            const foundFlags = [];
+            let globalFlagNumber = 1;
+            
+            flagPatterns.forEach((pattern, patternIndex) => {
+                pattern.regex.lastIndex = 0;
+                let match;
+                let patternMatches = 0;
+                
+                while ((match = pattern.regex.exec(text)) !== null && patternMatches < 2) {
+                    const context = pattern.context(match, text);
+                    
+                    // Determine approximate page (rough estimate)
+                    const approximatePage = Math.ceil((match.index / text.length) * currentPDF.numPages);
+                    
+                    foundFlags.push({
+                        id: `flag-${patternIndex}-${patternMatches}`,
+                        number: globalFlagNumber++,
+                        title: pattern.title,
+                        severity: pattern.severity,
+                        description: pattern.description,
+                        matchText: match[0],
+                        context: context,
+                        page: approximatePage,
+                        position: match.index
+                    });
+                    
+                    patternMatches++;
+                    console.log(`Found: ${pattern.title} on page ~${approximatePage}`);
+                    
+                    if (pattern.regex.lastIndex === match.index) {
+                        pattern.regex.lastIndex++;
+                    }
+                }
+            });
+            
+            // Remove duplicates and sort by position
+            const uniqueFlags = foundFlags.filter((flag, index, arr) => 
+                arr.findIndex(f => f.title === flag.title && Math.abs(f.position - flag.position) < 100) === index
+            );
+            
+            uniqueFlags.sort((a, b) => a.position - b.position);
+            
+            // Renumber
+            uniqueFlags.forEach((flag, index) => {
+                flag.number = index + 1;
+            });
+            
+            console.log(`Final red flags: ${uniqueFlags.length}`);
+            return uniqueFlags;
+        }
+        
+        // Calculate overall risk level
+        function calculateOverallRisk(redFlags) {
+            const highRiskCount = redFlags.filter(f => f.severity === 'high').length;
+            const mediumRiskCount = redFlags.filter(f => f.severity === 'medium').length;
+            
+            if (highRiskCount >= 3) return 'VERY HIGH';
+            if (highRiskCount >= 1) return 'HIGH';
+            if (mediumRiskCount >= 3) return 'MODERATE';
+            if (mediumRiskCount >= 1) return 'LOW';
+            return 'MINIMAL';
+        }
+        
+        // Render all results
+        async function renderResults(filename, analysis) {
+            console.log('Rendering results...');
+            
+            // Update header
+            document.getElementById('pdfTitle').textContent = filename;
+            document.getElementById('analysisStatus').textContent = 
+                `${analysis.redFlags.length} critical issues found`;
+            
+            // Update executive summary
+            document.getElementById('contractType').textContent = analysis.contractType;
+            document.getElementById('pageCount').textContent = analysis.numPages;
+            document.getElementById('keyParties').textContent = analysis.keyParties;
+            document.getElementById('overallRisk').textContent = analysis.overallRisk;
+            document.getElementById('overallRisk').className = 'summary-value ' + analysis.overallRisk.toLowerCase().replace(' ', '-');
+            
+            // Update risk counts
+            const highCount = analysis.redFlags.filter(f => f.severity === 'high').length;
+            const mediumCount = analysis.redFlags.filter(f => f.severity === 'medium').length;
+            
+            document.getElementById('highRiskCount').textContent = highCount;
+            document.getElementById('mediumRiskCount').textContent = mediumCount;
+            
+            // Render red flags list
+            renderRedFlags(analysis.redFlags);
+            
+            // Render PDF
+            await renderPDF();
+            
+            updateZoomDisplay();
+        }
+        
+        // Render red flags list
+        function renderRedFlags(flags) {
+            const container = document.getElementById('flagsList');
+            
+            if (flags.length === 0) {
+                container.innerHTML = `
+                    <div class="flag-item">
+                        <div class="flag-content">
+                            <div class="flag-title">✅ No Critical Issues Found</div>
+                            <div class="flag-description">This contract appears to have standard terms without major red flags.</div>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = flags.map(flag => `
+                <div class="flag-item" data-flag-id="${flag.id}" onclick="jumpToFlag('${flag.id}')">
+                    <div class="flag-number ${flag.severity}">${flag.number}</div>
+                    <div class="flag-content">
+                        <div class="flag-title">${flag.title}</div>
+                        <div class="flag-description">${flag.description}</div>
+                        <div class="flag-context">"${flag.context.substring(0, 120)}${flag.context.length > 120 ? '...' : ''}"</div>
+                        <div class="flag-page">Found on page ${flag.page}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Render PDF pages
+        async function renderPDF() {
+            const container = document.getElementById('pdfContainer');
+            container.innerHTML = '';
+            
+            if (!currentPDF) return;
+            
+            for (let pageNum = 1; pageNum <= currentPDF.numPages; pageNum++) {
+                const page = await currentPDF.getPage(pageNum);
+                const viewport = page.getViewport({ scale: currentZoom });
+                
+                // Create page wrapper
+                const pageWrapper = document.createElement('div');
+                pageWrapper.style.position = 'relative';
+                pageWrapper.style.marginBottom = '2rem';
+                
+                // Create page container
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'pdf-page';
+                pageDiv.style.width = viewport.width + 'px';
+                pageDiv.style.height = viewport.height + 'px';
+                pageDiv.setAttribute('data-page', pageNum);
+                
+                // Render PDF to canvas
+                const canvas = document.createElement('canvas');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                const ctx = canvas.getContext('2d');
+                
+                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                pageDiv.appendChild(canvas);
+                
+                // Add page number
+                const pageNumber = document.createElement('div');
+                pageNumber.className = 'page-number';
+                pageNumber.textContent = `Page ${pageNum}`;
+                
+                pageWrapper.appendChild(pageDiv);
+                pageWrapper.appendChild(pageNumber);
+                container.appendChild(pageWrapper);
+            }
+        }
+        
+        // Jump to specific flag
+        function jumpToFlag(flagId) {
+            console.log(`Jumping to flag: ${flagId}`);
+            
+            // Remove active class from all flags
+            document.querySelectorAll('.flag-item.active').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Add active class to clicked flag
+            const flagElement = document.querySelector(`[data-flag-id="${flagId}"]`);
+            if (flagElement) {
+                flagElement.classList.add('active');
+            }
+            
+            // Find the flag data
+            const flag = redFlags.find(f => f.id === flagId);
+            if (flag && flag.page) {
+                // Scroll to approximate page in PDF viewer
+                const pdfViewer = document.getElementById('pdfViewer');
+                const pageElement = document.querySelector(`[data-page="${flag.page}"]`);
+                
+                if (pageElement && pdfViewer) {
+                    const pageTop = pageElement.offsetTop - pdfViewer.offsetTop;
+                    pdfViewer.scrollTo({
+                        top: pageTop - 100, // Offset for better visibility
+                        behavior: 'smooth'
+                    });
+                    
+                    console.log(`Scrolled to page ${flag.page} for flag: ${flag.title}`);
+                } else {
+                    console.log(`Could not find page element for page ${flag.page}`);
+                }
+            }
+            
+            activeFlag = flagId;
+        }
+        
+        // Zoom functions
+        async function zoomIn() {
+            currentZoom = Math.min(2.5, currentZoom + 0.2);
+            await renderPDF();
+            updateZoomDisplay();
+        }
+        
+        async function zoomOut() {
+            currentZoom = Math.max(0.8, currentZoom - 0.2);
+            await renderPDF();
+            updateZoomDisplay();
+        }
+        
+        async function fitWidth() {
+            currentZoom = 1.3;
+            await renderPDF();
+            updateZoomDisplay();
+        }
+        
+        function updateZoomDisplay() {
+            document.getElementById('zoomDisplay').textContent = Math.round(currentZoom * 100) + '%';
+        }
+        
+        // UI functions
+        function showProcessing() {
+            document.getElementById('uploadSection').classList.add('hidden');
+            document.getElementById('processingOverlay').classList.remove('hidden');
+        }
+        
+        function hideProcessing() {
+            document.getElementById('processingOverlay').classList.add('hidden');
+        }
+        
+        function showMainInterface() {
+            document.getElementById('mainLayout').classList.remove('hidden');
+            document.getElementById('newContractBtn').classList.remove('hidden');
+            document.getElementById('shareBtn').classList.remove('hidden');
+        }
+        
+        function resetInterface() {
+            document.getElementById('mainLayout').classList.add('hidden');
+            document.getElementById('uploadSection').classList.remove('hidden');
+            document.getElementById('newContractBtn').classList.add('hidden');
+            document.getElementById('shareBtn').classList.add('hidden');
+            document.getElementById('fileInput').value = '';
+            
+            // Clean up
+            currentPDF = null;
+            redFlags = [];
+            activeFlag = null;
+        }
+        
+        function shareResults() {
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                alert('Results link copied to clipboard!');
+            });
+        }
+        
+        console.log('ContractIQ Professional loaded successfully');
+    </script>
+</body>
+</html>

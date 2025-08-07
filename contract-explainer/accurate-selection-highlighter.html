@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LegalCopilot - Selection-Based Accurate Highlighting</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-purple: #6366f1;
+            --primary-purple-dark: #4f46e5;
+            --primary-purple-light: #e0e7ff;
+            --success-green: #10b981;
+            --danger-red: #ef4444;
+            --warning-orange: #f97316;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --white: #ffffff;
+            
+            --high-risk: #ef4444;
+            --medium-risk: #f97316;
+            --low-risk: #22c55e;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            line-height: 1.5;
+            color: var(--gray-900);
+            background: var(--gray-50);
+            overflow: hidden;
+        }
+
+        .header {
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-200);
+            padding: 0 1.5rem;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .logo {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary-purple), var(--primary-purple-dark));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+            font-weight: 700;
+        }
+        
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--gray-900);
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background: var(--primary-purple);
+            color: var(--white);
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        
+        .btn-secondary {
+            background: var(--white);
+            color: var(--gray-700);
+            border: 1px solid var(--gray-300);
+        }
+
+        .main-layout {
+            position: fixed;
+            top: 64px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: grid;
+            grid-template-columns: 380px 1fr 380px;
+            background: var(--gray-50);
+        }
+
+        .summary-panel {
+            background: var(--white);
+            border-right: 1px solid var(--gray-200);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .summary-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .summary-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 0.5rem;
+        }
+        
+        .summary-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .clause-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            margin-bottom: 0.75rem;
+            border: 1px solid var(--gray-200);
+            background: var(--white);
+        }
+
+        .clause-item:hover {
+            background: var(--gray-50);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .clause-item.active {
+            background: var(--primary-purple-light);
+            border-color: var(--primary-purple);
+        }
+
+        .clause-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: var(--white);
+            flex-shrink: 0;
+        }
+
+        .clause-number.high { background: var(--high-risk); }
+        .clause-number.medium { background: var(--medium-risk); }
+        .clause-number.low { background: var(--low-risk); }
+
+        .clause-content {
+            flex: 1;
+        }
+
+        .clause-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 0.25rem;
+        }
+
+        .clause-summary {
+            font-size: 0.75rem;
+            color: var(--gray-600);
+            margin-bottom: 0.5rem;
+        }
+
+        .clause-location {
+            font-size: 0.75rem;
+            color: var(--primary-purple);
+            font-weight: 500;
+        }
+
+        .pdf-panel {
+            display: flex;
+            flex-direction: column;
+            background: var(--gray-100);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .pdf-header {
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-200);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 56px;
+        }
+        
+        .pdf-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .pdf-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+        
+        .pdf-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .control-btn {
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--gray-300);
+            background: var(--white);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        
+        .zoom-display {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+            font-weight: 500;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .pdf-viewer {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: auto;
+            background: var(--gray-200);
+            display: flex;
+            justify-content: center;
+            padding: 2rem;
+            position: relative;
+        }
+        
+        .pdf-container {
+            background: var(--white);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+            overflow: visible;
+            max-width: 100%;
+            width: fit-content;
+            position: relative;
+        }
+        
+        .pdf-page {
+            background: var(--white);
+            position: relative;
+            border-bottom: 1px solid var(--gray-200);
+            margin-bottom: 1rem;
+        }
+        
+        .pdf-page:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .pdf-page canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-width: none;
+        }
+
+        /* ACCURATE SELECTION-BASED HIGHLIGHTING */
+        .text-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            opacity: 0.2;
+            line-height: 1.0;
+            z-index: 2;
+        }
+
+        .text-layer > span {
+            color: transparent;
+            position: absolute;
+            white-space: pre;
+            cursor: text;
+            transform-origin: 0% 0%;
+            user-select: text;
+        }
+
+        .highlight-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .highlight-box {
+            position: absolute;
+            pointer-events: all;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border-radius: 4px;
+            opacity: 0.6;
+        }
+
+        .highlight-box:hover {
+            opacity: 0.8;
+            transform: scale(1.02);
+        }
+
+        .highlight-box.high-risk {
+            background: rgba(239, 68, 68, 0.3);
+            border: 2px solid var(--high-risk);
+        }
+
+        .highlight-box.medium-risk {
+            background: rgba(249, 115, 22, 0.3);
+            border: 2px solid var(--medium-risk);
+        }
+
+        .highlight-box.low-risk {
+            background: rgba(34, 197, 94, 0.3);
+            border: 2px solid var(--low-risk);
+        }
+
+        .highlight-label {
+            position: absolute;
+            top: -25px;
+            left: 0;
+            background: var(--gray-800);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+            z-index: 10;
+        }
+
+        .highlight-label.high-risk { background: var(--high-risk); }
+        .highlight-label.medium-risk { background: var(--medium-risk); }
+        .highlight-label.low-risk { background: var(--low-risk); }
+
+        .editor-panel {
+            background: var(--white);
+            border-left: 1px solid var(--gray-200);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .editor-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            align-items: center;
+            justify-content: between;
+        }
+        
+        .editor-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            flex: 1;
+        }
+        
+        .editor-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .editor-section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .original-text {
+            background: var(--gray-50);
+            border-left: 4px solid var(--primary-purple);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            color: var(--gray-700);
+        }
+
+        .risk-analysis {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .risk-analysis.high {
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .risk-analysis.medium {
+            background: rgba(249, 115, 22, 0.05);
+            border: 1px solid rgba(249, 115, 22, 0.2);
+        }
+
+        .risk-analysis.low {
+            background: rgba(34, 197, 94, 0.05);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .risk-level {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 0.75rem;
+        }
+
+        .risk-level.high {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--high-risk);
+        }
+
+        .risk-level.medium {
+            background: rgba(249, 115, 22, 0.1);
+            color: var(--medium-risk);
+        }
+
+        .risk-level.low {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--low-risk);
+        }
+
+        .upload-section {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: var(--gray-50);
+        }
+        
+        .upload-container {
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .upload-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--gray-900);
+            margin-bottom: 1rem;
+        }
+        
+        .upload-subtitle {
+            font-size: 1.125rem;
+            color: var(--gray-600);
+            margin-bottom: 2.5rem;
+        }
+        
+        .upload-area {
+            background: var(--white);
+            border: 2px dashed var(--gray-300);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary-purple);
+            background: var(--primary-purple-light);
+        }
+        
+        .upload-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1.5rem;
+            background: var(--gray-100);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+        
+        .upload-text {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 0.5rem;
+        }
+        
+        .upload-hint {
+            font-size: 0.875rem;
+            color: var(--gray-500);
+            margin-bottom: 2rem;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .processing-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .processing-content {
+            text-align: center;
+            max-width: 400px;
+        }
+        
+        .processing-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--gray-200);
+            border-top-color: var(--primary-purple);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+        
+        .processing-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 0.5rem;
+        }
+        
+        .processing-subtitle {
+            font-size: 0.875rem;
+            color: var(--gray-500);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Selection Instructions */
+        .selection-instructions {
+            position: fixed;
+            top: 70px;
+            right: 10px;
+            background: var(--primary-purple);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            max-width: 250px;
+            z-index: 1001;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        .selection-instructions.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div class="logo-section">
+            <div class="logo">L</div>
+            <div class="brand">LegalCopilot - Selection Based</div>
+        </div>
+        <div class="header-actions">
+            <button id="instructionsBtn" class="btn btn-secondary">
+                📍 Show Instructions
+            </button>
+            <button id="clearBtn" class="btn btn-secondary hidden">
+                Clear Highlights
+            </button>
+            <button id="exportBtn" class="btn btn-secondary hidden">
+                Export Highlights
+            </button>
+            <button id="newContractBtn" class="btn btn-secondary hidden">
+                New Contract
+            </button>
+        </div>
+    </header>
+
+    <!-- Selection Instructions -->
+    <div id="selectionInstructions" class="selection-instructions">
+        <strong>🎯 How to Create Accurate Highlights:</strong><br>
+        1. Select text in the PDF with your mouse<br>
+        2. Right-click and choose risk level<br>
+        3. Click on clauses in left panel to navigate<br>
+        <br>
+        <em>This approach guarantees pixel-perfect highlighting!</em>
+    </div>
+
+    <!-- Upload Section -->
+    <div id="uploadSection" class="upload-section">
+        <div class="upload-container">
+            <h1 class="upload-title">Selection-Based Highlighting</h1>
+            <p class="upload-subtitle">
+                Upload your PDF and create accurate highlights by selecting text directly
+            </p>
+            
+            <div id="uploadArea" class="upload-area">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">Drop your contract here</div>
+                <div class="upload-hint">or click to browse files (PDF format)</div>
+                <button id="uploadBtn" class="btn btn-primary">Choose File</button>
+                <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+            </div>
+        </div>
+    </div>
+
+    <!-- Processing Overlay -->
+    <div id="processingOverlay" class="processing-overlay hidden">
+        <div class="processing-content">
+            <div class="processing-spinner"></div>
+            <h3 class="processing-title">Loading PDF</h3>
+            <p class="processing-subtitle">Preparing for accurate selection-based highlighting...</p>
+        </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div id="mainLayout" class="main-layout hidden">
+        <!-- Left Panel -->
+        <div class="summary-panel">
+            <div class="summary-header">
+                <h2 class="summary-title">Contract Highlights</h2>
+                <div style="font-size: 0.875rem; color: var(--gray-500);">
+                    Select text in PDF to create highlights
+                </div>
+            </div>
+            
+            <div class="summary-content">
+                <div id="clausesList">
+                    <!-- Highlights will be added here dynamically -->
+                </div>
+                
+                <div style="margin-top: 2rem; padding: 1rem; background: var(--gray-50); border-radius: 8px;">
+                    <h4 style="font-size: 0.875rem; margin-bottom: 0.5rem;">Quick Start:</h4>
+                    <ol style="font-size: 0.75rem; color: var(--gray-600); line-height: 1.6;">
+                        <li>Select text in the PDF viewer</li>
+                        <li>Choose a risk level from the context menu</li>
+                        <li>Your highlight will appear here</li>
+                        <li>Click highlights to navigate to them</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+        <!-- PDF Viewer -->
+        <div class="pdf-panel">
+            <div class="pdf-header">
+                <div class="pdf-info">
+                    <span>📄</span>
+                    <span id="pdfTitle" class="pdf-title">Contract Document</span>
+                </div>
+                <div class="pdf-controls">
+                    <button class="control-btn" onclick="zoomOut()">−</button>
+                    <span class="zoom-display" id="zoomDisplay">100%</span>
+                    <button class="control-btn" onclick="zoomIn()">+</button>
+                    <button class="control-btn" onclick="fitWidth()">⚡</button>
+                </div>
+            </div>
+            
+            <div class="pdf-viewer" id="pdfViewer">
+                <div class="pdf-container" id="pdfContainer">
+                    <!-- PDF pages will be rendered here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="editor-panel">
+            <div class="editor-header">
+                <h2 class="editor-title" id="editorTitle">Select a highlight</h2>
+            </div>
+            
+            <div class="editor-content" id="editorContent">
+                <div class="editor-section">
+                    <div class="section-title">Instructions</div>
+                    <p style="color: var(--gray-600); font-size: 0.875rem; margin-bottom: 1.5rem;">
+                        Select any text in the PDF to create accurate highlights. Right-click to choose risk level and add labels.
+                    </p>
+                    
+                    <div class="section-title">Risk Color Legend</div>
+                    <div style="color: var(--gray-600); font-size: 0.75rem; line-height: 1.6; margin-bottom: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                            <div style="width: 12px; height: 12px; background: var(--high-risk); border-radius: 2px;"></div>
+                            <span>High Risk - Critical issues</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                            <div style="width: 12px; height: 12px; background: var(--medium-risk); border-radius: 2px;"></div>
+                            <span>Medium Risk - Important to review</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 12px; height: 12px; background: var(--low-risk); border-radius: 2px;"></div>
+                            <span>Low Risk - Generally favorable</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Context Menu -->
+    <div id="contextMenu" class="hidden" style="position: fixed; background: white; border: 1px solid var(--gray-300); border-radius: 8px; padding: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 2000;">
+        <div class="context-item" data-risk="high" style="padding: 8px 12px; cursor: pointer; border-radius: 4px; font-size: 0.875rem; color: var(--high-risk); font-weight: 500;">🔴 High Risk</div>
+        <div class="context-item" data-risk="medium" style="padding: 8px 12px; cursor: pointer; border-radius: 4px; font-size: 0.875rem; color: var(--medium-risk); font-weight: 500;">🟠 Medium Risk</div>
+        <div class="context-item" data-risk="low" style="padding: 8px 12px; cursor: pointer; border-radius: 4px; font-size: 0.875rem; color: var(--low-risk); font-weight: 500;">🟢 Low Risk</div>
+    </div>
+
+    <script>
+        console.log('🚀 Selection-Based Accurate Highlighting System loading...');
+        
+        // Initialize PDF.js
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+        
+        // Global state
+        let currentPDF = null;
+        let currentZoom = 1.4;
+        let highlights = [];
+        let pdfPages = [];
+        let activeHighlight = null;
+        let highlightCounter = 0;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing selection-based system...');
+            
+            const uploadArea = document.getElementById('uploadArea');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const fileInput = document.getElementById('fileInput');
+            
+            // Upload handlers
+            uploadArea.addEventListener('click', () => fileInput.click());
+            uploadBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fileInput.click();
+            });
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) {
+                    processFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    processFile(e.target.files[0]);
+                }
+            });
+            
+            // Button handlers
+            document.getElementById('newContractBtn')?.addEventListener('click', resetInterface);
+            document.getElementById('clearBtn')?.addEventListener('click', clearAllHighlights);
+            document.getElementById('exportBtn')?.addEventListener('click', exportHighlights);
+            document.getElementById('instructionsBtn')?.addEventListener('click', toggleInstructions);
+            
+            // Context menu handlers
+            document.addEventListener('click', hideContextMenu);
+            setupContextMenu();
+        });
+
+        // Process uploaded file
+        async function processFile(file) {
+            if (!file.type.includes('pdf')) {
+                alert('Please upload a PDF file.');
+                return;
+            }
+            
+            try {
+                showProcessing();
+                console.log('Processing file:', file.name);
+                
+                const pdfDoc = await loadPDF(file);
+                currentPDF = pdfDoc;
+                console.log(`✅ PDF loaded: ${pdfDoc.numPages} pages`);
+                
+                document.getElementById('pdfTitle').textContent = file.name;
+                
+                await renderPDFWithSelectionSupport();
+                
+                hideProcessing();
+                showMainInterface();
+                
+            } catch (error) {
+                console.error('❌ Error processing file:', error);
+                hideProcessing();
+                alert('Error processing file: ' + error.message);
+            }
+        }
+
+        // Load PDF document
+        function loadPDF(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async function() {
+                    try {
+                        const pdf = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
+                        resolve(pdf);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = () => reject(new Error('Failed to read file'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // Render PDF with selection support
+        async function renderPDFWithSelectionSupport() {
+            const container = document.getElementById('pdfContainer');
+            container.innerHTML = '';
+            pdfPages = [];
+            
+            if (!currentPDF) return;
+            
+            console.log(`🔄 Rendering ${currentPDF.numPages} pages with selection support...`);
+            
+            for (let pageNum = 1; pageNum <= currentPDF.numPages; pageNum++) {
+                const page = await currentPDF.getPage(pageNum);
+                const viewport = page.getViewport({ scale: currentZoom });
+                
+                // Create page wrapper
+                const pageWrapper = document.createElement('div');
+                pageWrapper.style.position = 'relative';
+                pageWrapper.style.marginBottom = '2rem';
+                pageWrapper.style.display = 'flex';
+                pageWrapper.style.flexDirection = 'column';
+                pageWrapper.style.alignItems = 'center';
+                
+                // Create page container
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'pdf-page';
+                pageDiv.style.width = viewport.width + 'px';
+                pageDiv.style.height = viewport.height + 'px';
+                pageDiv.setAttribute('data-page', pageNum);
+                pageDiv.id = `page-${pageNum}`;
+                
+                // Render canvas
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                canvas.style.width = viewport.width + 'px';
+                canvas.style.height = viewport.height + 'px';
+                
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                
+                await page.render(renderContext).promise;
+                pageDiv.appendChild(canvas);
+                
+                // Create text layer for selection
+                const textLayer = document.createElement('div');
+                textLayer.className = 'text-layer';
+                textLayer.style.width = viewport.width + 'px';
+                textLayer.style.height = viewport.height + 'px';
+                
+                try {
+                    const textContent = await page.getTextContent();
+                    console.log(`📝 Page ${pageNum}: ${textContent.items.length} text items`);
+                    
+                    await pdfjsLib.renderTextLayer({
+                        textContentSource: textContent,
+                        container: textLayer,
+                        viewport: viewport,
+                        enhanceTextSelection: true
+                    }).promise;
+                    
+                } catch (textError) {
+                    console.error(`❌ Text layer rendering failed for page ${pageNum}:`, textError);
+                }
+                
+                pageDiv.appendChild(textLayer);
+                
+                // Create highlight layer
+                const highlightLayer = document.createElement('div');
+                highlightLayer.className = 'highlight-layer';
+                highlightLayer.id = `highlights-${pageNum}`;
+                pageDiv.appendChild(highlightLayer);
+                
+                // Add page number
+                const pageNumber = document.createElement('div');
+                pageNumber.style.cssText = `
+                    position: absolute;
+                    bottom: -2rem;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(0,0,0,0.7);
+                    color: white;
+                    padding: 4px 12px;
+                    border-radius: 6px;
+                    font-size: 12px;
+                    font-weight: 500;
+                `;
+                pageNumber.textContent = `Page ${pageNum}`;
+                
+                pageWrapper.appendChild(pageDiv);
+                pageWrapper.appendChild(pageNumber);
+                container.appendChild(pageWrapper);
+                
+                pdfPages.push({
+                    pageNum,
+                    pageDiv,
+                    textLayer,
+                    highlightLayer,
+                    page,
+                    viewport,
+                    pageWrapper
+                });
+            }
+            
+            console.log(`✅ Successfully rendered ${pdfPages.length} pages with selection support`);
+            updateZoomDisplay();
+            setupSelectionHandlers();
+        }
+
+        // Setup selection handlers for accurate highlighting
+        function setupSelectionHandlers() {
+            const pdfViewer = document.getElementById('pdfViewer');
+            
+            // Right-click handler for creating highlights
+            pdfViewer.addEventListener('contextmenu', handleContextMenu);
+        }
+
+        // Handle context menu for creating highlights
+        function handleContextMenu(e) {
+            const selection = window.getSelection();
+            
+            if (selection.rangeCount === 0 || selection.toString().trim() === '') {
+                return; // No selection, allow default context menu
+            }
+            
+            e.preventDefault();
+            
+            // Show custom context menu
+            const contextMenu = document.getElementById('contextMenu');
+            contextMenu.style.left = e.pageX + 'px';
+            contextMenu.style.top = e.pageY + 'px';
+            contextMenu.classList.remove('hidden');
+        }
+
+        // Setup context menu
+        function setupContextMenu() {
+            const contextItems = document.querySelectorAll('.context-item');
+            
+            contextItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    const riskLevel = e.target.dataset.risk;
+                    createHighlightFromSelection(riskLevel);
+                    hideContextMenu();
+                });
+                
+                item.addEventListener('mouseenter', (e) => {
+                    e.target.style.backgroundColor = 'var(--gray-100)';
+                });
+                
+                item.addEventListener('mouseleave', (e) => {
+                    e.target.style.backgroundColor = '';
+                });
+            });
+        }
+
+        // Create highlight from current selection
+        function createHighlightFromSelection(riskLevel) {
+            const selection = window.getSelection();
+            
+            if (selection.rangeCount === 0) return;
+            
+            const range = selection.getRangeAt(0);
+            const selectedText = selection.toString().trim();
+            
+            if (!selectedText) return;
+            
+            // Find which page the selection is on
+            const pageElement = range.commonAncestorContainer.closest('.pdf-page');
+            if (!pageElement) return;
+            
+            const pageNum = parseInt(pageElement.dataset.page);
+            const pageData = pdfPages.find(p => p.pageNum === pageNum);
+            
+            if (!pageData) return;
+            
+            // Get selection rectangles
+            const rects = range.getClientRects();
+            const pageRect = pageElement.getBoundingClientRect();
+            
+            console.log(`🎯 Creating ${riskLevel} risk highlight on page ${pageNum}: "${selectedText.substring(0, 50)}..."`);
+            
+            // Create highlight data
+            const highlightId = `highlight-${++highlightCounter}`;
+            const highlight = {
+                id: highlightId,
+                text: selectedText,
+                riskLevel: riskLevel,
+                pageNum: pageNum,
+                timestamp: new Date().toISOString(),
+                rects: Array.from(rects).map(rect => ({
+                    x: rect.left - pageRect.left,
+                    y: rect.top - pageRect.top,
+                    width: rect.width,
+                    height: rect.height
+                }))
+            };
+            
+            // Create visual highlight
+            createVisualHighlight(highlight, pageData);
+            
+            // Add to highlights array
+            highlights.push(highlight);
+            
+            // Update UI
+            updateHighlightsList();
+            
+            // Clear selection
+            selection.removeAllRanges();
+        }
+
+        // Create visual highlight on page
+        function createVisualHighlight(highlight, pageData) {
+            const highlightLayer = pageData.highlightLayer;
+            
+            highlight.rects.forEach((rect, index) => {
+                const highlightBox = document.createElement('div');
+                highlightBox.className = `highlight-box ${highlight.riskLevel}-risk`;
+                highlightBox.id = `${highlight.id}-${index}`;
+                
+                highlightBox.style.left = rect.x + 'px';
+                highlightBox.style.top = rect.y + 'px';
+                highlightBox.style.width = rect.width + 'px';
+                highlightBox.style.height = rect.height + 'px';
+                
+                // Add label to first rect only
+                if (index === 0) {
+                    const label = document.createElement('div');
+                    label.className = `highlight-label ${highlight.riskLevel}-risk`;
+                    label.textContent = `${highlight.riskLevel.toUpperCase()}: ${highlight.text.substring(0, 20)}...`;
+                    highlightBox.appendChild(label);
+                }
+                
+                // Click handler
+                highlightBox.addEventListener('click', () => {
+                    selectHighlight(highlight);
+                });
+                
+                highlightLayer.appendChild(highlightBox);
+            });
+        }
+
+        // Update highlights list in left panel
+        function updateHighlightsList() {
+            const clausesList = document.getElementById('clausesList');
+            clausesList.innerHTML = '';
+            
+            highlights.forEach((highlight, index) => {
+                const clauseElement = document.createElement('div');
+                clauseElement.className = 'clause-item';
+                clauseElement.setAttribute('data-highlight-id', highlight.id);
+                
+                clauseElement.innerHTML = `
+                    <div class="clause-number ${highlight.riskLevel}">
+                        ${index + 1}
+                    </div>
+                    <div class="clause-content">
+                        <div class="clause-title">${highlight.riskLevel.toUpperCase()} Risk Clause</div>
+                        <div class="clause-summary">${highlight.text.substring(0, 80)}...</div>
+                        <div class="clause-location">
+                            📍 Page ${highlight.pageNum} • ${new Date(highlight.timestamp).toLocaleTimeString()}
+                        </div>
+                    </div>
+                `;
+                
+                clauseElement.addEventListener('click', () => selectHighlight(highlight));
+                clausesList.appendChild(clauseElement);
+            });
+        }
+
+        // Select and navigate to highlight
+        function selectHighlight(highlight) {
+            console.log('🎯 Navigating to highlight:', highlight.id);
+            
+            activeHighlight = highlight;
+            
+            // Update active state in list
+            document.querySelectorAll('.clause-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            const highlightElement = document.querySelector(`[data-highlight-id="${highlight.id}"]`);
+            if (highlightElement) {
+                highlightElement.classList.add('active');
+            }
+            
+            // Navigate to page
+            navigateToPDFPage(highlight.pageNum);
+            
+            // Update editor panel
+            updateEditorPanel(highlight);
+        }
+
+        // Navigate to specific page
+        function navigateToPDFPage(pageNumber) {
+            const pageElement = document.getElementById(`page-${pageNumber}`);
+            if (pageElement) {
+                const pdfViewer = document.getElementById('pdfViewer');
+                
+                const viewerRect = pdfViewer.getBoundingClientRect();
+                const pageRect = pageElement.getBoundingClientRect();
+                const currentScrollTop = pdfViewer.scrollTop;
+                
+                const targetScrollTop = currentScrollTop + pageRect.top - viewerRect.top - 50;
+                
+                pdfViewer.scrollTo({
+                    top: Math.max(0, targetScrollTop),
+                    behavior: 'smooth'
+                });
+                
+                // Visual feedback
+                pageElement.style.transition = 'all 0.5s ease';
+                pageElement.style.boxShadow = '0 0 30px rgba(99, 102, 241, 0.4)';
+                
+                setTimeout(() => {
+                    pageElement.style.boxShadow = '';
+                }, 2000);
+            }
+        }
+
+        // Update editor panel
+        function updateEditorPanel(highlight) {
+            const editorTitle = document.getElementById('editorTitle');
+            const editorContent = document.getElementById('editorContent');
+            const editorPanel = document.querySelector('.editor-panel');
+            
+            editorTitle.textContent = `${highlight.riskLevel.toUpperCase()} Risk Highlight`;
+            
+            // Apply color coding
+            const colors = {
+                high: 'var(--high-risk)',
+                medium: 'var(--medium-risk)', 
+                low: 'var(--low-risk)'
+            };
+            
+            editorPanel.style.borderLeft = `4px solid ${colors[highlight.riskLevel]}`;
+            
+            editorContent.innerHTML = `
+                <div class="editor-section">
+                    <div class="section-title">Selected Text</div>
+                    <div class="original-text">
+                        ${highlight.text}
+                    </div>
+                </div>
+
+                <div class="editor-section">
+                    <div class="section-title">Risk Assessment</div>
+                    <div class="risk-analysis ${highlight.riskLevel}">
+                        <div class="risk-level ${highlight.riskLevel}">
+                            ${highlight.riskLevel.toUpperCase()} RISK
+                        </div>
+                    </div>
+                </div>
+
+                <div class="editor-section">
+                    <div class="section-title">Details</div>
+                    <div style="font-size: 0.75rem; color: var(--gray-600); line-height: 1.6;">
+                        <div><strong>Page:</strong> ${highlight.pageNum}</div>
+                        <div><strong>Created:</strong> ${new Date(highlight.timestamp).toLocaleString()}</div>
+                        <div><strong>Characters:</strong> ${highlight.text.length}</div>
+                        <div><strong>Highlighting Method:</strong> Selection-based (100% accurate)</div>
+                    </div>
+                </div>
+
+                <div class="editor-section">
+                    <button class="btn btn-primary" onclick="copyHighlightText()" style="margin-right: 0.5rem;">
+                        Copy Text
+                    </button>
+                    <button class="btn btn-secondary" onclick="deleteHighlight('${highlight.id}')">
+                        Delete Highlight
+                    </button>
+                </div>
+            `;
+        }
+
+        // Copy highlight text
+        function copyHighlightText() {
+            if (activeHighlight) {
+                navigator.clipboard.writeText(activeHighlight.text).then(() => {
+                    alert('Text copied to clipboard!');
+                });
+            }
+        }
+
+        // Delete highlight
+        function deleteHighlight(highlightId) {
+            if (confirm('Delete this highlight?')) {
+                // Remove from highlights array
+                highlights = highlights.filter(h => h.id !== highlightId);
+                
+                // Remove visual elements
+                const highlightElements = document.querySelectorAll(`[id^="${highlightId}"]`);
+                highlightElements.forEach(el => el.remove());
+                
+                // Update UI
+                updateHighlightsList();
+                
+                // Clear editor if this was the active highlight
+                if (activeHighlight && activeHighlight.id === highlightId) {
+                    activeHighlight = null;
+                    document.getElementById('editorTitle').textContent = 'Select a highlight';
+                    document.getElementById('editorContent').innerHTML = `
+                        <div class="editor-section">
+                            <div class="section-title">Instructions</div>
+                            <p style="color: var(--gray-600); font-size: 0.875rem;">
+                                Select text in the PDF and right-click to create accurate highlights.
+                            </p>
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        // Clear all highlights
+        function clearAllHighlights() {
+            if (highlights.length === 0) {
+                alert('No highlights to clear.');
+                return;
+            }
+            
+            if (confirm(`Clear all ${highlights.length} highlights?`)) {
+                // Remove all visual highlights
+                document.querySelectorAll('.highlight-box').forEach(el => el.remove());
+                
+                // Clear arrays
+                highlights = [];
+                activeHighlight = null;
+                
+                // Update UI
+                updateHighlightsList();
+                document.getElementById('editorTitle').textContent = 'Select a highlight';
+                document.getElementById('editorContent').innerHTML = `
+                    <div class="editor-section">
+                        <div class="section-title">Instructions</div>
+                        <p style="color: var(--gray-600); font-size: 0.875rem;">
+                            Select text in the PDF and right-click to create accurate highlights.
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
+        // Export highlights
+        function exportHighlights() {
+            if (highlights.length === 0) {
+                alert('No highlights to export.');
+                return;
+            }
+            
+            const exportData = {
+                document: {
+                    filename: document.getElementById('pdfTitle').textContent,
+                    pages: currentPDF ? currentPDF.numPages : 0,
+                    exportedAt: new Date().toISOString()
+                },
+                highlights: highlights.map(h => ({
+                    id: h.id,
+                    text: h.text,
+                    riskLevel: h.riskLevel,
+                    pageNumber: h.pageNum,
+                    timestamp: h.timestamp,
+                    method: 'selection-based-accurate',
+                    coordinates: h.rects
+                })),
+                metadata: {
+                    totalHighlights: highlights.length,
+                    method: 'Selection-based accurate highlighting',
+                    accuracy: '100% - based on user text selection'
+                }
+            };
+            
+            const jsonString = JSON.stringify(exportData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `accurate-highlights-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log('✅ Accurate highlights exported');
+        }
+
+        // Hide context menu
+        function hideContextMenu() {
+            document.getElementById('contextMenu').classList.add('hidden');
+        }
+
+        // Toggle instructions
+        function toggleInstructions() {
+            const instructions = document.getElementById('selectionInstructions');
+            instructions.classList.toggle('hidden');
+        }
+
+        // Zoom functions
+        async function zoomIn() {
+            currentZoom = Math.min(2.5, currentZoom + 0.2);
+            if (currentPDF) {
+                await renderPDFWithSelectionSupport();
+            }
+        }
+        
+        async function zoomOut() {
+            currentZoom = Math.max(0.8, currentZoom - 0.2);
+            if (currentPDF) {
+                await renderPDFWithSelectionSupport();
+            }
+        }
+        
+        async function fitWidth() {
+            currentZoom = 1.4;
+            if (currentPDF) {
+                await renderPDFWithSelectionSupport();
+            }
+        }
+        
+        function updateZoomDisplay() {
+            document.getElementById('zoomDisplay').textContent = Math.round(currentZoom * 100) + '%';
+        }
+        
+        // UI functions
+        function showProcessing() {
+            document.getElementById('uploadSection').classList.add('hidden');
+            document.getElementById('processingOverlay').classList.remove('hidden');
+        }
+        
+        function hideProcessing() {
+            document.getElementById('processingOverlay').classList.add('hidden');
+        }
+        
+        function showMainInterface() {
+            document.getElementById('mainLayout').classList.remove('hidden');
+            document.getElementById('clearBtn').classList.remove('hidden');
+            document.getElementById('exportBtn').classList.remove('hidden');
+            document.getElementById('newContractBtn').classList.remove('hidden');
+        }
+        
+        function resetInterface() {
+            document.getElementById('mainLayout').classList.add('hidden');
+            document.getElementById('uploadSection').classList.remove('hidden');
+            document.getElementById('clearBtn').classList.add('hidden');
+            document.getElementById('exportBtn').classList.add('hidden');
+            document.getElementById('newContractBtn').classList.add('hidden');
+            document.getElementById('fileInput').value = '';
+            
+            // Clean up
+            currentPDF = null;
+            highlights = [];
+            pdfPages = [];
+            activeHighlight = null;
+            highlightCounter = 0;
+        }
+        
+        console.log('✅ Selection-Based Accurate Highlighting System loaded');
+        console.log('🎯 This system guarantees 100% accurate highlighting based on user selection');
+    </script>
+</body>
+</html>

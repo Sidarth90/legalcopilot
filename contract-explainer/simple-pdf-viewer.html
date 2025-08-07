@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LegalCopilot - Simple PDF Viewer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; }
+        
+        .header {
+            background: white; padding: 20px; text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px;
+        }
+        
+        .upload-section {
+            background: white; padding: 40px; text-align: center;
+            border-radius: 8px; max-width: 600px; margin: 0 auto;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .file-input {
+            display: block; margin: 20px auto; padding: 12px;
+            font-size: 16px; width: 300px;
+        }
+        
+        .process-btn {
+            background: #6366f1; color: white; padding: 12px 24px;
+            border: none; border-radius: 6px; font-size: 16px;
+            cursor: pointer; margin: 10px;
+        }
+        
+        .process-btn:hover { background: #5856eb; }
+        
+        #result { margin-top: 20px; text-align: left; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏛️ LegalCopilot - Simple PDF Test</h1>
+        <p>Testing basic PDF upload functionality</p>
+    </div>
+
+    <div class="upload-section">
+        <h2>Upload PDF File</h2>
+        <input type="file" id="fileInput" class="file-input" accept=".pdf" />
+        <button id="processBtn" class="process-btn">Process PDF</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+            console.log('✅ PDF.js loaded successfully');
+        } else {
+            console.error('❌ PDF.js failed to load');
+        }
+
+        document.getElementById('processBtn').addEventListener('click', async function() {
+            const fileInput = document.getElementById('fileInput');
+            const result = document.getElementById('result');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                result.innerHTML = '<p style="color: red;">❌ Please select a PDF file first</p>';
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            console.log('Processing file:', file.name, file.type);
+            
+            if (!file.type.includes('pdf')) {
+                result.innerHTML = '<p style="color: red;">❌ Please select a PDF file</p>';
+                return;
+            }
+            
+            result.innerHTML = '<p>🔄 Processing PDF...</p>';
+            
+            try {
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+                
+                console.log('PDF loaded, pages:', pdf.numPages);
+                
+                result.innerHTML = `
+                    <div style="color: green; padding: 20px; background: #f0f9ff; border-radius: 6px;">
+                        <h3>✅ PDF Loaded Successfully!</h3>
+                        <p><strong>File:</strong> ${file.name}</p>
+                        <p><strong>Pages:</strong> ${pdf.numPages}</p>
+                        <p><strong>Size:</strong> ${Math.round(file.size / 1024)} KB</p>
+                    </div>
+                `;
+                
+                // Test page extraction
+                const page = await pdf.getPage(1);
+                const textContent = await page.getTextContent();
+                const textItems = textContent.items.map(item => item.str).join(' ');
+                
+                result.innerHTML += `
+                    <div style="margin-top: 20px; padding: 20px; background: #f9f9f9; border-radius: 6px;">
+                        <h4>📄 Page 1 Text Sample:</h4>
+                        <p style="font-size: 14px; line-height: 1.6;">${textItems.substring(0, 500)}...</p>
+                    </div>
+                `;
+                
+                console.log('✅ PDF processing complete');
+                
+            } catch (error) {
+                console.error('Error processing PDF:', error);
+                result.innerHTML = `<p style="color: red;">❌ Error: ${error.message}</p>`;
+            }
+        });
+        
+        console.log('🚀 Simple PDF viewer initialized');
+    </script>
+</body>
+</html>

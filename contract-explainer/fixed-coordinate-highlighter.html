@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LegalCopilot - Fixed Coordinate Highlighting</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary-purple: #6366f1;
+            --high-risk: #ef4444;
+            --medium-risk: #f97316; 
+            --low-risk: #22c55e;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-900: #111827;
+            --white: #ffffff;
+        }
+        
+        body { font-family: 'Inter', sans-serif; background: var(--gray-50); overflow: hidden; }
+        
+        .header {
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-200);
+            padding: 0 1.5rem;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 1000;
+        }
+        
+        .logo { width: 36px; height: 36px; background: var(--primary-purple); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; }
+        .brand { font-size: 1.25rem; font-weight: 700; margin-left: 12px; }
+        
+        .btn {
+            padding: 8px 16px; border-radius: 6px; font-size: 0.875rem; font-weight: 500;
+            border: 1px solid var(--gray-200); background: var(--white); cursor: pointer;
+            margin-left: 8px;
+        }
+        .btn-primary { background: var(--primary-purple); color: white; border-color: var(--primary-purple); }
+
+        .main-layout {
+            position: fixed; top: 64px; left: 0; right: 0; bottom: 0;
+            display: grid; grid-template-columns: 380px 1fr 380px;
+        }
+
+        .summary-panel {
+            background: var(--white); border-right: 1px solid var(--gray-200);
+            display: flex; flex-direction: column; overflow: hidden;
+        }
+        
+        .summary-header { padding: 1.5rem; border-bottom: 1px solid var(--gray-200); }
+        .summary-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; }
+        .summary-content { flex: 1; overflow-y: auto; padding: 1.5rem; }
+
+        .clause-item {
+            display: flex; gap: 1rem; padding: 1rem; border-radius: 8px; cursor: pointer;
+            margin-bottom: 0.75rem; border: 1px solid var(--gray-200); background: var(--white);
+            transition: all 0.15s ease;
+        }
+        .clause-item:hover { background: var(--gray-50); transform: translateY(-1px); }
+        .clause-item.active { background: var(--gray-100); border-color: var(--primary-purple); }
+
+        .clause-number {
+            width: 32px; height: 32px; border-radius: 6px; display: flex; align-items: center; justify-content: center;
+            font-size: 0.875rem; font-weight: 700; color: white; flex-shrink: 0;
+        }
+        .clause-number.high { background: var(--high-risk); }
+        .clause-number.medium { background: var(--medium-risk); }
+        .clause-number.low { background: var(--low-risk); }
+
+        .clause-content { flex: 1; }
+        .clause-title { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem; }
+        .clause-summary { font-size: 0.75rem; color: var(--gray-600); margin-bottom: 0.5rem; }
+        .clause-location { font-size: 0.75rem; color: var(--primary-purple); font-weight: 500; }
+
+        .pdf-panel { display: flex; flex-direction: column; background: var(--gray-100); }
+        .pdf-header { background: var(--white); border-bottom: 1px solid var(--gray-200); padding: 1rem 1.5rem; display: flex; justify-content: space-between; }
+        .pdf-controls { display: flex; gap: 0.5rem; }
+        .control-btn { width: 36px; height: 36px; border: 1px solid var(--gray-200); background: var(--white); border-radius: 6px; cursor: pointer; }
+
+        .pdf-viewer { 
+            flex: 1; 
+            overflow-y: auto; 
+            overflow-x: auto; 
+            background: var(--gray-200); 
+            padding: 2rem;
+            scroll-behavior: smooth;
+            position: relative;
+        }
+        .pdf-container { 
+            background: var(--white); 
+            border-radius: 8px; 
+            position: relative;
+            margin: 0 auto;
+            width: fit-content;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            display: block;
+        }
+        .pdf-page { position: relative; margin-bottom: 1rem; }
+        .pdf-page canvas { display: block; width: 100%; }
+
+        .highlight-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 10;
+        }
+        
+        .highlight-box {
+            position: absolute; pointer-events: all; cursor: pointer;
+            border-radius: 4px; opacity: 0.7; transition: all 0.2s ease;
+            border: 2px solid;
+        }
+        .highlight-box:hover { opacity: 0.9; transform: scale(1.01); }
+        
+        .highlight-box.high { background: rgba(239, 68, 68, 0.3); border-color: var(--high-risk); }
+        .highlight-box.medium { background: rgba(249, 115, 22, 0.3); border-color: var(--medium-risk); }
+        .highlight-box.low { background: rgba(34, 197, 94, 0.3); border-color: var(--low-risk); }
+        
+        .highlight-label {
+            position: absolute; top: -25px; left: 0; background: var(--gray-900); color: white;
+            padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; white-space: nowrap;
+        }
+
+        .editor-panel { background: var(--white); border-left: 1px solid var(--gray-200); display: flex; flex-direction: column; }
+        .editor-header { padding: 1.5rem; border-bottom: 1px solid var(--gray-200); }
+        .editor-title { font-size: 1.25rem; font-weight: 700; }
+        .editor-content { flex: 1; overflow-y: auto; padding: 1.5rem; }
+
+        .upload-section { height: 100vh; display: flex; align-items: center; justify-content: center; }
+        .upload-area { 
+            background: var(--white); border: 2px dashed var(--gray-200); border-radius: 8px;
+            padding: 3rem; text-align: center; cursor: pointer; max-width: 400px;
+        }
+        .upload-area:hover { border-color: var(--primary-purple); }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div style="display: flex; align-items: center;">
+            <div class="logo">L</div>
+            <div class="brand">LegalCopilot - Fixed Coordinates</div>
+        </div>
+        <div>
+            <button id="debugBtn" class="btn hidden">Debug Mode</button>
+            <button id="newBtn" class="btn hidden">New Contract</button>
+        </div>
+    </header>
+
+    <div id="uploadSection" class="upload-section">
+        <div class="upload-area" id="uploadArea">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📄</div>
+            <div style="font-size: 1.5rem; font-weight: 600; margin-bottom: 0.5rem;">Upload Contract</div>
+            <div style="color: var(--gray-600); margin-bottom: 1.5rem;">Fixed coordinate highlighting system</div>
+            <button class="btn btn-primary" id="uploadBtn">Choose PDF File</button>
+            <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+        </div>
+    </div>
+
+    <div id="mainLayout" class="main-layout hidden">
+        <!-- Left Panel -->
+        <div class="summary-panel">
+            <div class="summary-header">
+                <h2 class="summary-title">Contract Clauses</h2>
+                <div style="font-size: 0.875rem; color: var(--gray-600);">Click clauses to navigate</div>
+            </div>
+            <div class="summary-content" id="clausesList">
+                <!-- Will be populated dynamically -->
+            </div>
+        </div>
+
+        <!-- PDF Viewer -->
+        <div class="pdf-panel">
+            <div class="pdf-header">
+                <span id="pdfTitle">Contract Document</span>
+                <div class="pdf-controls">
+                    <button class="control-btn" onclick="zoomOut()">−</button>
+                    <span style="margin: 0 8px; font-size: 0.875rem;" id="zoomDisplay">100%</span>
+                    <button class="control-btn" onclick="zoomIn()">+</button>
+                </div>
+            </div>
+            <div class="pdf-viewer" id="pdfViewer">
+                <div class="pdf-container" id="pdfContainer"></div>
+            </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="editor-panel" id="editorPanel">
+            <div class="editor-header">
+                <h2 class="editor-title" id="editorTitle">Select a clause</h2>
+            </div>
+            <div class="editor-content" id="editorContent">
+                <p style="color: var(--gray-600);">Click on any clause in the left panel to view details and navigate to its location in the PDF.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+        
+        let currentPDF = null;
+        let currentZoom = 1.2;
+        let activeClause = null;
+
+        // MANUALLY MAPPED COORDINATES - Based on actual Okomera PDF
+        const contractClauses = [
+            {
+                id: 'governance',
+                title: 'Governance Compromise',
+                summary: 'Holder must vote according to President instructions',
+                riskLevel: 'high',
+                pageNumber: 8,
+                // Coordinates are percentage-based relative to page
+                coordinates: { left: 5, top: 35, width: 90, height: 12 },
+                originalText: 'To give effect to the Governance Compromise, the Holder agrees... to vote in strict accordance with the instructions provided by the President of the Company'
+            },
+            {
+                id: 'noncompete',
+                title: 'Non-Compete',
+                summary: 'Non-compete restrictions remain applicable per SHA',
+                riskLevel: 'medium',
+                pageNumber: 19,
+                coordinates: { left: 8, top: 25, width: 84, height: 15 },
+                originalText: 'For the avoidance of doubts, it is reminded that the Holder has been freed of the non-compete undertaking... However, the Non-Sollicit applicable to the Holder pursuant to the SHA shall however remain fully applicable'
+            },
+            {
+                id: 'dragalong',
+                title: 'Drag Along Right',
+                summary: 'Main shareholders can force you to sell your shares',
+                riskLevel: 'high',
+                pageNumber: 15,
+                coordinates: { left: 6, top: 20, width: 88, height: 18 },
+                originalText: 'should any Third Party... offer to purchase at least ninety-five per cent (95%) of the share capital... if such Offer is accepted by the Shareholders holding at least 50%'
+            },
+            {
+                id: 'tagalong',
+                title: 'Tag Along Right',
+                summary: 'You can sell alongside major shareholders in certain sales',
+                riskLevel: 'low',
+                pageNumber: 13,
+                coordinates: { left: 10, top: 40, width: 80, height: 14 },
+                originalText: 'the Holder... shall have a tag-along right, pursuant to which it shall be entitled to compel the Transferor Shareholder(s)'
+            },
+            {
+                id: 'priority',
+                title: 'Priority Allocation',
+                summary: 'Complex waterfall allocation rules determine exit proceeds',
+                riskLevel: 'medium',
+                pageNumber: 16,
+                coordinates: { left: 7, top: 30, width: 86, height: 20 },
+                originalText: 'the portion of the total Sale price... shall be allocated amongst the Selling Parties'
+            }
+        ];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            const uploadArea = document.getElementById('uploadArea');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const fileInput = document.getElementById('fileInput');
+            
+            uploadArea.addEventListener('click', () => fileInput.click());
+            uploadBtn.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'var(--primary-purple)';
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = '';
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '';
+                if (e.dataTransfer.files.length > 0) {
+                    processFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    processFile(e.target.files[0]);
+                }
+            });
+            
+            document.getElementById('newBtn').addEventListener('click', resetInterface);
+        });
+
+        // Process PDF file
+        async function processFile(file) {
+            if (!file.type.includes('pdf')) {
+                alert('Please upload a PDF file.');
+                return;
+            }
+            
+            try {
+                console.log('Loading PDF:', file.name);
+                const pdfDoc = await loadPDF(file);
+                currentPDF = pdfDoc;
+                
+                document.getElementById('pdfTitle').textContent = file.name;
+                
+                await renderPDF();
+                populateClauses();
+                createHighlights();
+                
+                // Show interface
+                document.getElementById('uploadSection').classList.add('hidden');
+                document.getElementById('mainLayout').classList.remove('hidden');
+                document.getElementById('debugBtn').classList.remove('hidden');
+                document.getElementById('newBtn').classList.remove('hidden');
+                
+                console.log('✅ PDF loaded successfully');
+            } catch (error) {
+                console.error('Error loading PDF:', error);
+                alert('Error loading PDF: ' + error.message);
+            }
+        }
+
+        // Load PDF
+        function loadPDF(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async function() {
+                    try {
+                        const pdf = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
+                        resolve(pdf);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = () => reject(new Error('Failed to read file'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // Render PDF
+        async function renderPDF() {
+            const container = document.getElementById('pdfContainer');
+            container.innerHTML = '';
+            
+            if (!currentPDF) return;
+            
+            for (let pageNum = 1; pageNum <= currentPDF.numPages; pageNum++) {
+                const page = await currentPDF.getPage(pageNum);
+                const viewport = page.getViewport({ scale: currentZoom });
+                
+                // Create page container
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'pdf-page';
+                pageDiv.id = `page-${pageNum}`;
+                pageDiv.style.width = viewport.width + 'px';
+                pageDiv.style.height = viewport.height + 'px';
+                pageDiv.setAttribute('data-page', pageNum);
+                
+                // Render to canvas
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                
+                await page.render({
+                    canvasContext: ctx,
+                    viewport: viewport
+                }).promise;
+                
+                pageDiv.appendChild(canvas);
+                
+                // Add highlight overlay
+                const overlay = document.createElement('div');
+                overlay.className = 'highlight-overlay';
+                overlay.id = `overlay-${pageNum}`;
+                pageDiv.appendChild(overlay);
+                
+                container.appendChild(pageDiv);
+                
+                console.log(`Rendered page ${pageNum}`);
+            }
+            
+            updateZoomDisplay();
+        }
+
+        // Populate clauses list
+        function populateClauses() {
+            const clausesList = document.getElementById('clausesList');
+            clausesList.innerHTML = '';
+            
+            contractClauses.forEach((clause, index) => {
+                const clauseElement = document.createElement('div');
+                clauseElement.className = 'clause-item';
+                clauseElement.setAttribute('data-clause-id', clause.id);
+                
+                clauseElement.innerHTML = `
+                    <div class="clause-number ${clause.riskLevel}">
+                        ${index + 1}
+                    </div>
+                    <div class="clause-content">
+                        <div class="clause-title">${clause.title}</div>
+                        <div class="clause-summary">${clause.summary}</div>
+                        <div class="clause-location">
+                            📍 Page ${clause.pageNumber} • ${clause.riskLevel.toUpperCase()} RISK
+                        </div>
+                    </div>
+                `;
+                
+                clauseElement.addEventListener('click', () => selectClause(clause));
+                clausesList.appendChild(clauseElement);
+            });
+        }
+
+        // Create highlights on PDF
+        function createHighlights() {
+            contractClauses.forEach(clause => {
+                const overlay = document.getElementById(`overlay-${clause.pageNumber}`);
+                if (!overlay) return;
+                
+                const pageDiv = document.getElementById(`page-${clause.pageNumber}`);
+                const pageWidth = pageDiv.offsetWidth;
+                const pageHeight = pageDiv.offsetHeight;
+                
+                // Calculate position from percentages
+                const left = (clause.coordinates.left / 100) * pageWidth;
+                const top = (clause.coordinates.top / 100) * pageHeight;
+                const width = (clause.coordinates.width / 100) * pageWidth;
+                const height = (clause.coordinates.height / 100) * pageHeight;
+                
+                // Create highlight box
+                const highlightBox = document.createElement('div');
+                highlightBox.className = `highlight-box ${clause.riskLevel}`;
+                highlightBox.id = `highlight-${clause.id}`;
+                highlightBox.style.left = left + 'px';
+                highlightBox.style.top = top + 'px';
+                highlightBox.style.width = width + 'px';
+                highlightBox.style.height = height + 'px';
+                
+                // Add label
+                const label = document.createElement('div');
+                label.className = 'highlight-label';
+                label.textContent = clause.title;
+                highlightBox.appendChild(label);
+                
+                // Click handler
+                highlightBox.addEventListener('click', () => selectClause(clause));
+                
+                overlay.appendChild(highlightBox);
+                
+                console.log(`Created highlight for ${clause.title} on page ${clause.pageNumber}`);
+            });
+        }
+
+        // Select clause
+        function selectClause(clause) {
+            console.log('Selected clause:', clause.title);
+            activeClause = clause;
+            
+            // Update active states
+            document.querySelectorAll('.clause-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-clause-id="${clause.id}"]`).classList.add('active');
+            
+            // Navigate to page
+            const pageElement = document.getElementById(`page-${clause.pageNumber}`);
+            if (pageElement) {
+                const pdfViewer = document.getElementById('pdfViewer');
+                const pageRect = pageElement.getBoundingClientRect();
+                const viewerRect = pdfViewer.getBoundingClientRect();
+                
+                pdfViewer.scrollTo({
+                    top: pdfViewer.scrollTop + pageRect.top - viewerRect.top - 50,
+                    behavior: 'smooth'
+                });
+            }
+            
+            // Update editor panel
+            updateEditorPanel(clause);
+            
+            // Highlight the annotation
+            document.querySelectorAll('.highlight-box').forEach(box => {
+                box.style.animation = '';
+            });
+            const highlight = document.getElementById(`highlight-${clause.id}`);
+            if (highlight) {
+                highlight.style.animation = 'pulse 1s ease-in-out 3';
+            }
+        }
+
+        // Update editor panel
+        function updateEditorPanel(clause) {
+            const editorTitle = document.getElementById('editorTitle');
+            const editorContent = document.getElementById('editorContent');
+            const editorPanel = document.getElementById('editorPanel');
+            
+            editorTitle.textContent = clause.title;
+            
+            // Color coding
+            const colors = {
+                high: 'var(--high-risk)',
+                medium: 'var(--medium-risk)',
+                low: 'var(--low-risk)'
+            };
+            editorPanel.style.borderLeft = `4px solid ${colors[clause.riskLevel]}`;
+            
+            editorContent.innerHTML = `
+                <div style="margin-bottom: 2rem;">
+                    <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 1rem; text-transform: uppercase;">Risk Level</h4>
+                    <div style="display: inline-flex; align-items: center; padding: 0.5rem 1rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; background: rgba(${clause.riskLevel === 'high' ? '239,68,68' : clause.riskLevel === 'medium' ? '249,115,22' : '34,197,94'}, 0.1); color: ${colors[clause.riskLevel]};">
+                        ${clause.riskLevel} Risk
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 2rem;">
+                    <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 1rem; text-transform: uppercase;">Summary</h4>
+                    <p style="color: var(--gray-600); line-height: 1.6;">${clause.summary}</p>
+                </div>
+                
+                <div style="margin-bottom: 2rem;">
+                    <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 1rem; text-transform: uppercase;">Original Text</h4>
+                    <div style="background: var(--gray-50); padding: 1rem; border-radius: 6px; border-left: 4px solid ${colors[clause.riskLevel]}; font-size: 0.875rem; line-height: 1.6; color: var(--gray-700);">
+                        ${clause.originalText}
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 style="font-size: 0.875rem; font-weight: 600; margin-bottom: 1rem; text-transform: uppercase;">Location</h4>
+                    <div style="font-size: 0.75rem; color: var(--gray-600);">
+                        <div><strong>Page:</strong> ${clause.pageNumber}</div>
+                        <div><strong>Position:</strong> ${clause.coordinates.left}%, ${clause.coordinates.top}%</div>
+                        <div><strong>Size:</strong> ${clause.coordinates.width}% × ${clause.coordinates.height}%</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Zoom functions
+        async function zoomIn() {
+            currentZoom = Math.min(2.0, currentZoom + 0.2);
+            await renderPDF();
+            createHighlights();
+        }
+        
+        async function zoomOut() {
+            currentZoom = Math.max(0.8, currentZoom - 0.2);
+            await renderPDF();
+            createHighlights();
+        }
+        
+        function updateZoomDisplay() {
+            document.getElementById('zoomDisplay').textContent = Math.round(currentZoom * 100) + '%';
+        }
+
+        // Reset interface
+        function resetInterface() {
+            document.getElementById('mainLayout').classList.add('hidden');
+            document.getElementById('uploadSection').classList.remove('hidden');
+            document.getElementById('debugBtn').classList.add('hidden');
+            document.getElementById('newBtn').classList.add('hidden');
+            document.getElementById('fileInput').value = '';
+            
+            currentPDF = null;
+            activeClause = null;
+        }
+
+        // Add pulse animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes pulse {
+                0%, 100% { opacity: 0.7; transform: scale(1); }
+                50% { opacity: 1; transform: scale(1.02); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        console.log('✅ Fixed Coordinate Highlighting System loaded');
+    </script>
+</body>
+</html>

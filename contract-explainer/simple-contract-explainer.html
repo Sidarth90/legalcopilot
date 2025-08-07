@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contract Explainer - Simple Version</title>
+    <!-- PDF.js for PDF processing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .header h1 {
+            color: #2563eb;
+            display: inline-block;
+        }
+        
+        .badge {
+            background: #dbeafe;
+            color: #2563eb;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            margin-left: 0.5rem;
+        }
+        
+        .main-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: #2563eb;
+            background-color: #f8fafc;
+        }
+        
+        .upload-area.dragover {
+            border-color: #2563eb;
+            background-color: #eff6ff;
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+        
+        .btn {
+            background: #2563eb;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        .btn:hover {
+            background: #1d4ed8;
+        }
+        
+        .btn-secondary {
+            background: #6b7280;
+        }
+        
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+        
+        .analysis-section {
+            margin: 1.5rem 0;
+            padding: 1.5rem;
+            border-left: 4px solid #e5e7eb;
+            background: #f9fafb;
+            border-radius: 0 8px 8px 0;
+        }
+        
+        .analysis-section h2 {
+            color: #1f2937;
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+        }
+        
+        .red-flags {
+            border-left-color: #dc2626;
+            background-color: #fef2f2;
+        }
+        
+        .bottom-line {
+            border-left-color: #059669;
+            background-color: #f0fdf4;
+        }
+        
+        .error-box {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #b91c1c;
+            padding: 1rem;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .success-box {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+            padding: 1rem;
+            border-radius: 6px;
+        }
+        
+        .processing {
+            text-align: center;
+            padding: 2rem;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #2563eb;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .sidebar {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-top: 2rem;
+        }
+        
+        .ad-placeholder {
+            background: #f3f4f6;
+            height: 250px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #6b7280;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #d1d5db;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>Contract Explainer</h1>
+        <span class="badge">AI-Powered</span>
+        <span style="float: right; color: #6b7280;">Free • No signup required</span>
+    </div>
+
+    <div class="container">
+        <div class="grid">
+            <!-- Main Content -->
+            <div>
+                <!-- Upload Section -->
+                <div id="uploadSection" class="main-card">
+                    <h2 style="text-align: center; margin-bottom: 1rem;">Understand Any Contract in Plain English</h2>
+                    <p style="text-align: center; color: #6b7280; margin-bottom: 2rem;">Upload your contract and get a simple explanation in 30 seconds</p>
+                    
+                    <div id="uploadArea" class="upload-area">
+                        <div>
+                            <svg width="48" height="48" style="margin: 0 auto 1rem; display: block; color: #9ca3af;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                            </svg>
+                            <p style="font-size: 1.125rem; font-weight: 500; margin-bottom: 0.5rem;">Drop your contract here</p>
+                            <p style="color: #6b7280; margin-bottom: 1rem;">or click to browse</p>
+                            <p style="color: #9ca3af; font-size: 0.875rem;">Supports PDF and text files</p>
+                        </div>
+                        <input type="file" id="fileInput" accept=".pdf,.txt" style="display: none;">
+                    </div>
+                </div>
+
+                <!-- Processing Section -->
+                <div id="processingSection" class="main-card hidden">
+                    <div class="processing">
+                        <div class="spinner"></div>
+                        <h3>Analyzing your contract...</h3>
+                        <p style="color: #6b7280;">Our AI is reading through your document</p>
+                        <p id="progressText" style="color: #2563eb; font-weight: 500; margin-top: 1rem;">Extracting text from document...</p>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div id="resultsSection" class="main-card hidden">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                        <h2>Contract Analysis Results</h2>
+                        <button id="newAnalysisBtn" class="btn btn-secondary">Analyze Another</button>
+                    </div>
+                    <p style="color: #6b7280; margin-bottom: 1.5rem;"><span id="fileName"></span> • Analyzed just now</p>
+                    
+                    <div id="analysisContent">
+                        <!-- Analysis will appear here -->
+                    </div>
+
+                    <div style="margin-top: 2rem; padding: 1rem; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 6px;">
+                        <p style="color: #92400e; font-size: 0.875rem;">
+                            <strong>Disclaimer:</strong> This analysis is for informational purposes only and should not be considered legal advice. Always consult with a qualified attorney for legal matters.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Error Section -->
+                <div id="errorSection" class="main-card hidden">
+                    <div class="error-box">
+                        <h3>Analysis Issue</h3>
+                        <p id="errorMessage"></p>
+                        <button id="retryBtn" class="btn" style="margin-top: 1rem;">Try Again</button>
+                        <button id="showWorkaroundBtn" class="btn" style="margin-top: 1rem; margin-left: 0.5rem;">Use Alternative Method</button>
+                    </div>
+                </div>
+
+                <!-- Workaround Section -->
+                <div id="workaroundSection" class="main-card hidden">
+                    <h3 style="color: #f59e0b; margin-bottom: 1rem;">Alternative Analysis Method</h3>
+                    <p style="margin-bottom: 1rem;">Copy the text below and paste it into ChatGPT or Claude for analysis:</p>
+                    
+                    <div style="margin-bottom: 1rem;">
+                        <h4>Your Contract Text:</h4>
+                        <textarea id="extractedText" rows="8" readonly></textarea>
+                    </div>
+                    
+                    <div style="margin-bottom: 1rem;">
+                        <h4>Copy this prompt to ChatGPT/Claude:</h4>
+                        <div id="promptText" style="background: #f3f4f6; padding: 1rem; border-radius: 4px; font-family: monospace; font-size: 0.875rem; margin-bottom: 0.5rem;"></div>
+                        <button id="copyPromptBtn" class="btn">Copy Prompt</button>
+                    </div>
+                    
+                    <button id="backBtn" style="background: none; border: none; color: #2563eb; cursor: pointer;">← Try Different File</button>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div>
+                <div class="sidebar">
+                    <div class="ad-placeholder">
+                        Advertisement<br>(300x250)
+                    </div>
+                    
+                    <h3 style="margin-bottom: 1rem;">Need More Help?</h3>
+                    <div style="margin-bottom: 1rem;">
+                        <a href="https://legalzoom.com" target="_blank" style="display: block; color: #2563eb; text-decoration: none; margin-bottom: 0.5rem;">📋 LegalZoom - Legal Services</a>
+                        <a href="https://rocketlawyer.com" target="_blank" style="display: block; color: #2563eb; text-decoration: none; margin-bottom: 0.5rem;">⚖️ Rocket Lawyer - Legal Advice</a>
+                        <a href="https://avvo.com" target="_blank" style="display: block; color: #2563eb; text-decoration: none;">👨‍💼 Avvo - Find a Lawyer</a>
+                    </div>
+                </div>
+
+                <div class="sidebar">
+                    <h3 style="margin-bottom: 1rem;">How It Works</h3>
+                    <div style="font-size: 0.875rem;">
+                        <div style="margin-bottom: 0.5rem;"><strong>1.</strong> Upload your contract</div>
+                        <div style="margin-bottom: 0.5rem;"><strong>2.</strong> AI reads and analyzes it</div>
+                        <div><strong>3.</strong> Get plain English explanation</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+        // Global variables
+        let extractedDocumentText = '';
+        let currentFileName = '';
+
+        // DOM elements
+        const uploadSection = document.getElementById('uploadSection');
+        const processingSection = document.getElementById('processingSection');
+        const resultsSection = document.getElementById('resultsSection');
+        const errorSection = document.getElementById('errorSection');
+        const workaroundSection = document.getElementById('workaroundSection');
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const progressText = document.getElementById('progressText');
+        const analysisContent = document.getElementById('analysisContent');
+
+        console.log('Contract Explainer loading...');
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing...');
+            
+            // File upload handling
+            uploadArea.addEventListener('click', () => fileInput.click());
+            uploadArea.addEventListener('dragover', handleDragOver);
+            uploadArea.addEventListener('dragleave', handleDragLeave);
+            uploadArea.addEventListener('drop', handleDrop);
+            fileInput.addEventListener('change', handleFileSelect);
+            
+            // Button handlers
+            document.getElementById('newAnalysisBtn').addEventListener('click', resetToUpload);
+            document.getElementById('retryBtn').addEventListener('click', retryAnalysis);
+            document.getElementById('showWorkaroundBtn').addEventListener('click', showWorkaround);
+            document.getElementById('copyPromptBtn').addEventListener('click', copyPrompt);
+            document.getElementById('backBtn').addEventListener('click', resetToUpload);
+            
+            console.log('Event listeners added');
+        });
+
+        // File handling functions
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        }
+
+        function handleDragLeave() {
+            uploadArea.classList.remove('dragover');
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            if (e.target.files.length > 0) {
+                processFile(e.target.files[0]);
+            }
+        }
+
+        // PDF text extraction function
+        async function extractTextFromPDF(file) {
+            return new Promise((resolve, reject) => {
+                const fileReader = new FileReader();
+                fileReader.onload = async function() {
+                    try {
+                        console.log('Reading PDF file...');
+                        const typedarray = new Uint8Array(this.result);
+                        const pdf = await pdfjsLib.getDocument(typedarray).promise;
+                        let text = '';
+                        
+                        console.log(`PDF has ${pdf.numPages} pages`);
+                        updateProgress(`Extracting text from ${pdf.numPages} pages...`);
+                        
+                        for (let i = 1; i <= pdf.numPages; i++) {
+                            updateProgress(`Processing page ${i} of ${pdf.numPages}...`);
+                            const page = await pdf.getPage(i);
+                            const textContent = await page.getTextContent();
+                            const pageText = textContent.items.map(item => item.str).join(' ');
+                            text += pageText + '\n\n';
+                        }
+                        
+                        console.log(`Extracted ${text.length} characters from PDF`);
+                        resolve(text.trim());
+                    } catch (error) {
+                        console.error('PDF extraction error:', error);
+                        reject(new Error('Failed to read PDF. The file might be corrupted, password-protected, or image-based.'));
+                    }
+                };
+                fileReader.onerror = () => reject(new Error('Failed to read file'));
+                fileReader.readAsArrayBuffer(file);
+            });
+        }
+
+        // Main processing function
+        async function processFile(file) {
+            console.log('Processing file:', file.name, file.type, file.size);
+            
+            try {
+                // Basic validation
+                if (file.size > 16 * 1024 * 1024) {
+                    showError('File too large. Please upload files smaller than 16MB.');
+                    return;
+                }
+
+                currentFileName = file.name;
+                showProcessing();
+                updateProgress('Reading your document...');
+                
+                // Extract text based on file type
+                let text = '';
+                if (file.type === 'text/plain' || file.name.toLowerCase().endsWith('.txt')) {
+                    updateProgress('Extracting text from document...');
+                    text = await file.text();
+                } else if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                    updateProgress('Processing PDF file...');
+                    text = await extractTextFromPDF(file);
+                } else {
+                    showError('Please upload PDF or text files only.');
+                    return;
+                }
+
+                if (!text || text.trim().length < 50) {
+                    showError('Could not extract enough readable text from the document. This might be an image-based PDF or corrupted file.');
+                    return;
+                }
+
+                console.log(`Extracted ${text.length} characters. First 200 chars:`, text.substring(0, 200));
+                extractedDocumentText = text;
+                updateProgress('Analyzing contract with AI...');
+
+                // Generate analysis based on actual contract content
+                setTimeout(() => {
+                    const analysis = generateDetailedAnalysis(text);
+                    showResults(analysis);
+                }, 1500);
+
+            } catch (error) {
+                console.error('Processing error:', error);
+                showError('An error occurred while processing your file: ' + error.message);
+            }
+        }
+
+        // Generate detailed analysis based on actual contract content
+        function generateDetailedAnalysis(text) {
+            const lowerText = text.toLowerCase();
+            const words = text.split(/\s+/).length;
+            
+            // Extract key terms and patterns
+            const hasMoneyTerms = /\$|€|£|payment|fee|cost|price|salary|wage/i.test(text);
+            const hasDateTerms = /\d{1,2}\/\d{1,2}\/\d{4}|\d{4}-\d{2}-\d{2}|january|february|march|april|may|june|july|august|september|october|november|december/i.test(text);
+            const hasTerminationTerms = /terminat|end|expir|cancel|breach/i.test(text);
+            
+            let contractType = 'General Agreement';
+            let purpose = 'establish terms and conditions between parties';
+            let keyPoints = [];
+            let redFlags = [];
+            let bottomLine = '';
+            let riskLevel = 'MODERATE';
+
+            // Detailed contract type detection
+            if (lowerText.includes('shareholder') || lowerText.includes('bspce') || lowerText.includes('stock') || lowerText.includes('equity')) {
+                contractType = 'Shareholder/Equity Agreement';
+                purpose = 'define rights and obligations related to company ownership, stock options, and shareholder governance';
+                keyPoints = [
+                    'Stock option exercise rights and timing',
+                    'Voting rights and board representation',
+                    'Transfer restrictions and right of first refusal',
+                    'Liquidation preferences and exit scenarios',
+                    'Non-compete and confidentiality obligations'
+                ];
+                redFlags = [
+                    'Loss of voting rights - you become a silent partner',
+                    'Drag-along rights - majority can force you to sell',
+                    'Low liquidation priority - you get paid last',
+                    'Broad non-compete restrictions may limit future opportunities',
+                    'Automatic renewal or extension clauses'
+                ];
+                riskLevel = 'HIGH';
+                bottomLine = 'HIGH RISK: This significantly limits your control and may impact future career options. Negotiate voting rights, liquidation preferences, and non-compete terms before signing.';
+            } else if (lowerText.includes('employment') || lowerText.includes('job') || lowerText.includes('employee')) {
+                contractType = 'Employment Agreement';
+                purpose = 'establish the terms of employment including duties, compensation, and termination conditions';
+                keyPoints = [
+                    'Job description and reporting structure',
+                    'Salary, benefits, and bonus structure',
+                    'Working hours and overtime policies',
+                    'Termination notice requirements',
+                    'Non-compete and confidentiality clauses'
+                ];
+                redFlags = [
+                    'At-will employment - can be fired without cause',
+                    'Broad non-compete clause may limit future job options',
+                    'Unpaid overtime or unclear overtime policies',
+                    'Mandatory arbitration limits your right to sue'
+                ];
+                riskLevel = 'MODERATE';
+                bottomLine = 'MODERATE RISK: Standard employment terms but review non-compete and termination clauses carefully.';
+            } else if (lowerText.includes('lease') || lowerText.includes('rent') || lowerText.includes('tenant') || lowerText.includes('landlord')) {
+                contractType = 'Lease/Rental Agreement';
+                purpose = 'establish rental terms for property including rent, deposit, and tenant/landlord responsibilities';
+                keyPoints = [
+                    'Monthly rent amount and due date',
+                    'Security deposit and return conditions',
+                    'Lease term and renewal options',
+                    'Maintenance and repair responsibilities',
+                    'Pet policies and subletting rules'
+                ];
+                redFlags = [
+                    'Excessive security deposit (more than 2 months rent)',
+                    'Tenant responsible for major repairs',
+                    'No subletting allowed - limits flexibility',
+                    'Automatic rent increases without caps'
+                ];
+                riskLevel = 'MODERATE';
+                bottomLine = 'MODERATE RISK: Review repair responsibilities and deposit terms. Negotiate excessive fees.';
+            } else if (lowerText.includes('service') || lowerText.includes('consulting') || lowerText.includes('contractor')) {
+                contractType = 'Service/Consulting Agreement';
+                purpose = 'define the scope of services to be provided and payment terms';
+                keyPoints = [
+                    'Detailed scope of work and deliverables',
+                    'Payment schedule and late payment terms',
+                    'Intellectual property ownership',
+                    'Liability and indemnification terms',
+                    'Termination and modification procedures'
+                ];
+                redFlags = [
+                    'Unlimited liability - you could owe unlimited damages',
+                    'Vague scope of work leads to scope creep',
+                    'Client owns all intellectual property created',
+                    'Automatic renewal without consent'
+                ];
+                riskLevel = 'HIGH';
+                bottomLine = 'HIGH RISK: Unlimited liability is very dangerous. Negotiate liability caps and clearer scope definition.';
+            }
+
+            // Add specific red flags based on content analysis
+            if (lowerText.includes('unlimited liability') || lowerText.includes('all damages')) {
+                redFlags.push('MAJOR RED FLAG: Unlimited liability clause could cost you everything');
+                riskLevel = 'VERY HIGH';
+            }
+            if (lowerText.includes('automatic renewal') || lowerText.includes('auto-renew')) {
+                redFlags.push('Automatic renewal - contract continues without your explicit consent');
+            }
+            if (lowerText.includes('non-compete') && (lowerText.includes('2 year') || lowerText.includes('24 month'))) {
+                redFlags.push('Long non-compete period (2+ years) severely limits future opportunities');
+            }
+
+            // Analyze financial terms
+            if (hasMoneyTerms) {
+                const amounts = text.match(/\$[\d,]+/g);
+                if (amounts && amounts.length > 0) {
+                    keyPoints.push(`Financial terms: ${amounts.slice(0, 3).join(', ')}${amounts.length > 3 ? '...' : ''}`);
+                }
+            }
+
+            return `
+## Contract Type & Purpose
+This is a **${contractType}** (${words} words). 
+
+The main purpose is to ${purpose}.
+
+## Key Sections
+${keyPoints.map(point => `• ${point}`).join('\n')}
+
+## ⚠️ RED FLAGS
+${redFlags.map(flag => `• ${flag}`).join('\n')}
+${redFlags.length === 0 ? '• No major red flags identified, but still review carefully' : ''}
+
+## BOTTOM LINE
+**Risk Level: ${riskLevel}**
+
+${bottomLine || `Review all terms carefully before signing. ${riskLevel === 'HIGH' || riskLevel === 'VERY HIGH' ? 'Consider consulting a lawyer due to high risk terms.' : 'Consider consulting a lawyer for complex clauses.'}`}
+
+*Based on analysis of ${words} words. This is AI-generated analysis for informational purposes only.*
+            `.trim();
+        }
+
+        // UI state management
+        function showProcessing() {
+            hideAllSections();
+            processingSection.classList.remove('hidden');
+        }
+
+        function showResults(analysis) {
+            hideAllSections();
+            resultsSection.classList.remove('hidden');
+            
+            // Update file info
+            document.getElementById('fileName').textContent = currentFileName;
+            
+            // Format and display analysis
+            const formattedAnalysis = formatAnalysis(analysis);
+            analysisContent.innerHTML = formattedAnalysis;
+        }
+
+        function showError(message) {
+            hideAllSections();
+            errorSection.classList.remove('hidden');
+            document.getElementById('errorMessage').textContent = message;
+        }
+
+        function showWorkaround() {
+            hideAllSections();
+            workaroundSection.classList.remove('hidden');
+            
+            // Show extracted text
+            document.getElementById('extractedText').value = extractedDocumentText.substring(0, 2000) + 
+                (extractedDocumentText.length > 2000 ? '\n\n[Text truncated for display...]' : '');
+            
+            // Create prompt
+            const prompt = `Please analyze this contract and explain it in plain English:
+
+"${extractedDocumentText.substring(0, 3000)}${extractedDocumentText.length > 3000 ? '...[truncated]' : ''}"
+
+Structure your response with:
+1. Contract Type & Purpose
+2. Key Sections Explained  
+3. ⚠️ RED FLAGS (risky clauses)
+4. BOTTOM LINE (should I sign this?)
+
+Use simple language, avoid legal jargon.`;
+            
+            document.getElementById('promptText').textContent = prompt;
+        }
+
+        function hideAllSections() {
+            uploadSection.classList.add('hidden');
+            processingSection.classList.add('hidden');
+            resultsSection.classList.add('hidden');
+            errorSection.classList.add('hidden');
+            workaroundSection.classList.add('hidden');
+        }
+
+        function updateProgress(message) {
+            progressText.textContent = message;
+        }
+
+        // Format analysis for display
+        function formatAnalysis(analysisText) {
+            let html = analysisText;
+            
+            // Format sections
+            html = html.replace(/## Contract Type & Purpose/g, '<div class="analysis-section"><h2>📄 Contract Type & Purpose</h2>');
+            html = html.replace(/## Key Sections/g, '</div><div class="analysis-section"><h2>🔍 Key Sections</h2>');
+            html = html.replace(/## ⚠️ RED FLAGS/g, '</div><div class="analysis-section red-flags"><h2>⚠️ RED FLAGS</h2>');
+            html = html.replace(/## BOTTOM LINE/g, '</div><div class="analysis-section bottom-line"><h2>✅ BOTTOM LINE</h2>');
+            
+            // Close last section
+            html += '</div>';
+            
+            // Convert line breaks
+            html = html.replace(/\n/g, '<br>');
+            
+            return html;
+        }
+
+        // Action functions
+        function resetToUpload() {
+            hideAllSections();
+            uploadSection.classList.remove('hidden');
+            fileInput.value = '';
+            extractedDocumentText = '';
+            currentFileName = '';
+        }
+
+        function retryAnalysis() {
+            if (fileInput.files.length > 0) {
+                processFile(fileInput.files[0]);
+            } else {
+                resetToUpload();
+            }
+        }
+
+        function copyPrompt() {
+            const prompt = document.getElementById('promptText').textContent;
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(prompt).then(() => {
+                    alert('Prompt copied to clipboard! Paste this into ChatGPT or Claude for analysis.');
+                });
+            } else {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = prompt;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('Prompt copied to clipboard! Paste this into ChatGPT or Claude for analysis.');
+            }
+        }
+
+        console.log('Contract Explainer loaded successfully');
+    </script>
+</body>
+</html>

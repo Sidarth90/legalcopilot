@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contract Explainer - Understand Any Contract in Plain English</title>
+    <meta name="description" content="Free AI-powered contract analysis. Upload your contract and get a simple explanation in seconds. No legal jargon, just plain English.">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google AdSense (Replace with your publisher ID) -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-YOUR-PUBLISHER-ID"
+            crossorigin="anonymous"></script>
+    
+    <style>
+        .drop-zone {
+            transition: all 0.3s ease;
+        }
+        .drop-zone.dragover {
+            border-color: #2563eb;
+            background-color: #eff6ff;
+        }
+        .analysis-section {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            border-left: 4px solid #e5e7eb;
+        }
+        .analysis-section h2 {
+            color: #1f2937;
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+        .analysis-section.red-flags {
+            border-left-color: #dc2626;
+            background-color: #fef2f2;
+        }
+        .analysis-section.bottom-line {
+            border-left-color: #059669;
+            background-color: #f0fdf4;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-b">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-gray-900">Contract Explainer</h1>
+                    <span class="ml-2 text-sm text-blue-600 bg-blue-100 px-2 py-1 rounded">AI-Powered</span>
+                </div>
+                <div class="text-sm text-gray-600">
+                    Free • No signup required • Instant results
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <!-- Main Content Area -->
+            <div class="lg:col-span-3">
+                <!-- Upload Section -->
+                <div id="uploadSection" class="bg-white rounded-lg shadow-sm border p-8">
+                    <div class="text-center">
+                        <h2 class="text-3xl font-bold text-gray-900 mb-4">Understand Any Contract in Plain English</h2>
+                        <p class="text-gray-600 mb-8 text-lg">Upload your contract and get a simple explanation in 30 seconds</p>
+                        
+                        <!-- File Upload Zone -->
+                        <div id="dropZone" class="drop-zone border-2 border-dashed border-gray-300 rounded-lg p-12 mb-6 hover:border-blue-500 cursor-pointer transition-all">
+                            <div class="text-center">
+                                <svg class="mx-auto h-12 w-12 text-gray-400 mb-4" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                    <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                </svg>
+                                <p class="text-lg font-medium text-gray-900 mb-2">Drop your contract here</p>
+                                <p class="text-gray-500 mb-4">or click to browse</p>
+                                <p class="text-sm text-gray-400">Supports PDF, Word documents, and text files</p>
+                            </div>
+                            <input type="file" id="fileInput" class="hidden" accept=".pdf,.doc,.docx,.txt">
+                        </div>
+                        
+                        <div class="text-sm text-gray-500">
+                            <p>✅ Free forever • 🔒 Your files are secure • ⚡ Results in seconds</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Processing Section -->
+                <div id="processingSection" class="hidden bg-white rounded-lg shadow-sm border p-8">
+                    <div class="text-center">
+                        <div class="mb-4">
+                            <svg class="mx-auto h-16 w-16 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-semibold text-gray-900 mb-2">Analyzing your contract...</h3>
+                        <p class="text-gray-600 mb-6">Our AI is reading through your document and breaking it down into plain English</p>
+                        
+                        <div id="progressText" class="text-sm text-blue-600 font-medium">
+                            Extracting text from document...
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Results Section -->
+                <div id="resultsSection" class="hidden bg-white rounded-lg shadow-sm border p-8">
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h2 class="text-2xl font-bold text-gray-900">Contract Analysis Results</h2>
+                            <button id="newAnalysisBtn" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors">
+                                Analyze Another Contract
+                            </button>
+                        </div>
+                        <div class="text-sm text-gray-500">
+                            <span id="fileName" class="font-medium"></span> • <span id="wordCount"></span> words • Analyzed just now
+                        </div>
+                    </div>
+
+                    <!-- Analysis Content -->
+                    <div id="analysisContent" class="prose max-w-none">
+                        <!-- AI analysis will appear here -->
+                    </div>
+
+                    <!-- Share Section -->
+                    <div class="mt-8 pt-6 border-t border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <p class="text-sm text-gray-500">Found this helpful? Share it with others!</p>
+                            <button id="shareBtn" class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                                Share Results
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Disclaimer -->
+                    <div class="mt-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p class="text-sm text-yellow-800">
+                            <strong>Disclaimer:</strong> This analysis is for informational purposes only and should not be considered legal advice. Always consult with a qualified attorney for legal matters.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Error Section -->
+                <div id="errorSection" class="hidden bg-red-50 border border-red-200 rounded-lg p-6">
+                    <div class="text-center">
+                        <h3 class="text-lg font-semibold text-red-800 mb-2">Analysis Failed</h3>
+                        <p id="errorMessage" class="text-red-600 mb-4"></p>
+                        <button id="retryBtn" class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors">
+                            Try Again
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar with Ads -->
+            <div class="lg:col-span-1">
+                <div class="space-y-6">
+                    <!-- Ad Space 1 - Always visible -->
+                    <div class="bg-white rounded-lg shadow-sm border p-4">
+                        <div class="text-center">
+                            <div class="w-full h-64 bg-gray-100 rounded flex items-center justify-center">
+                                <!-- Google AdSense Ad Unit (300x250) -->
+                                <ins class="adsbygoogle"
+                                     style="display:block"
+                                     data-ad-client="ca-pub-YOUR-PUBLISHER-ID"
+                                     data-ad-slot="YOUR-AD-SLOT-ID"
+                                     data-ad-format="rectangle"></ins>
+                                <script>
+                                     (adsbygoogle = window.adsbygoogle || []).push({});
+                                </script>
+                                <!-- Fallback placeholder -->
+                                <p class="text-gray-500 text-sm">Advertisement<br>(300x250)</p>
+                            </div>
+                            <p class="text-xs text-gray-400 mt-2">Advertisement</p>
+                        </div>
+                    </div>
+
+                    <!-- Legal Resources -->
+                    <div class="bg-white rounded-lg shadow-sm border p-4">
+                        <h3 class="font-semibold text-gray-900 mb-3">Need More Help?</h3>
+                        <div class="space-y-3">
+                            <a href="https://legalzoom.com" target="_blank" class="block text-sm text-blue-600 hover:text-blue-800">
+                                📋 LegalZoom - Legal Services
+                            </a>
+                            <a href="https://rocketlawyer.com" target="_blank" class="block text-sm text-blue-600 hover:text-blue-800">
+                                ⚖️ Rocket Lawyer - Legal Advice  
+                            </a>
+                            <a href="https://avvo.com" target="_blank" class="block text-sm text-blue-600 hover:text-blue-800">
+                                👨‍💼 Avvo - Find a Lawyer
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- How it Works -->
+                    <div class="bg-blue-50 rounded-lg border p-4">
+                        <h3 class="font-semibold text-blue-900 mb-3">How It Works</h3>
+                        <div class="space-y-2 text-sm text-blue-800">
+                            <div class="flex items-start">
+                                <span class="text-blue-600 mr-2">1.</span>
+                                <span>Upload your contract</span>
+                            </div>
+                            <div class="flex items-start">
+                                <span class="text-blue-600 mr-2">2.</span>
+                                <span>AI reads and analyzes it</span>
+                            </div>
+                            <div class="flex items-start">
+                                <span class="text-blue-600 mr-2">3.</span>
+                                <span>Get plain English explanation</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Banner Ad (only show on results) -->
+        <div id="bottomBannerAd" class="hidden mt-8">
+            <div class="bg-white rounded-lg shadow-sm border p-4">
+                <div class="text-center">
+                    <div class="w-full h-20 bg-gray-100 rounded flex items-center justify-center">
+                        <!-- Google AdSense Banner Ad (728x90) -->
+                        <ins class="adsbygoogle"
+                             style="display:block"
+                             data-ad-client="ca-pub-YOUR-PUBLISHER-ID"
+                             data-ad-slot="YOUR-BANNER-AD-SLOT-ID"
+                             data-ad-format="banner"></ins>
+                        <script>
+                             (adsbygoogle = window.adsbygoogle || []).push({});
+                        </script>
+                        <!-- Fallback placeholder -->
+                        <p class="text-gray-500 text-sm">Advertisement (728x90)</p>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2">Advertisement</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">Contract Explainer</h3>
+                    <p class="text-gray-400 text-sm">AI-powered contract analysis for everyone. Understand legal documents in plain English, completely free.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Quick Links</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white">How It Works</a></li>
+                        <li><a href="#" class="hover:text-white">Privacy Policy</a></li>
+                        <li><a href="#" class="hover:text-white">Terms of Service</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Contact</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white">Support</a></li>
+                        <li><a href="#" class="hover:text-white">Feedback</a></li>
+                        <li><a href="#" class="hover:text-white">Report Issue</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-sm text-gray-400">
+                <p>&copy; 2024 Contract Explainer. All rights reserved. Made with ❤️ for people who hate legal jargon.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

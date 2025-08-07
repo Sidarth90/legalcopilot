@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LegalCopilot - Working Scrolling Version</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
+        :root {
+            --primary-purple: #6366f1;
+            --high-risk: #ef4444;
+            --medium-risk: #f97316; 
+            --low-risk: #22c55e;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-900: #111827;
+            --white: #ffffff;
+        }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--gray-50); 
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        .header {
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-200);
+            padding: 12px 24px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0; 
+            left: 0; 
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .logo { 
+            width: 32px; 
+            height: 32px; 
+            background: var(--primary-purple); 
+            border-radius: 6px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            color: white; 
+            font-weight: 700; 
+            margin-right: 12px;
+        }
+        
+        .brand { 
+            font-size: 1.2rem; 
+            font-weight: 700; 
+        }
+        
+        .btn {
+            padding: 8px 16px; 
+            border-radius: 6px; 
+            font-size: 0.875rem; 
+            font-weight: 500;
+            border: 1px solid var(--gray-200); 
+            background: var(--white); 
+            cursor: pointer;
+            margin-left: 8px;
+        }
+        
+        .btn-primary { 
+            background: var(--primary-purple); 
+            color: white; 
+            border-color: var(--primary-purple); 
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+            padding-top: 60px;
+        }
+
+        .left-panel {
+            width: 300px;
+            background: var(--white);
+            border-right: 1px solid var(--gray-200);
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .left-panel h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--gray-900);
+        }
+
+        .middle-panel {
+            flex: 1;
+            background: var(--gray-100);
+            overflow-y: auto;
+            overflow-x: auto;
+            padding: 20px;
+            position: relative;
+            height: calc(100vh - 60px);
+            scroll-behavior: smooth;
+        }
+
+        .right-panel {
+            width: 300px;
+            background: var(--white);
+            border-left: 1px solid var(--gray-200);
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .clause-item {
+            display: flex; 
+            gap: 12px; 
+            padding: 12px; 
+            border-radius: 8px; 
+            cursor: pointer;
+            margin-bottom: 12px; 
+            border: 1px solid var(--gray-200); 
+            background: var(--white);
+            transition: all 0.15s ease;
+        }
+        
+        .clause-item:hover { 
+            background: var(--gray-50); 
+            transform: translateY(-1px); 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .clause-item.active { 
+            background: var(--gray-100); 
+            border-color: var(--primary-purple); 
+        }
+
+        .clause-number {
+            width: 28px; 
+            height: 28px; 
+            border-radius: 6px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            font-size: 0.8rem; 
+            font-weight: 700; 
+            color: white; 
+            flex-shrink: 0;
+        }
+        
+        .clause-number.high { background: var(--high-risk); }
+        .clause-number.medium { background: var(--medium-risk); }
+        .clause-number.low { background: var(--low-risk); }
+
+        .clause-content { flex: 1; }
+        .clause-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; }
+        .clause-summary { font-size: 0.7rem; color: var(--gray-600); margin-bottom: 6px; }
+        .clause-location { font-size: 0.7rem; color: var(--primary-purple); font-weight: 500; }
+
+        .pdf-container {
+            background: var(--white);
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            margin: 0 auto;
+            width: fit-content;
+        }
+        
+        .pdf-page {
+            position: relative;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        
+        .pdf-page:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .pdf-page canvas {
+            display: block;
+            width: 100%;
+        }
+
+        .highlight-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        
+        .highlight-box {
+            position: absolute;
+            pointer-events: all;
+            cursor: pointer;
+            border-radius: 4px;
+            opacity: 0.7;
+            transition: all 0.2s ease;
+            border: 2px solid;
+        }
+        
+        .highlight-box:hover {
+            opacity: 0.9;
+            transform: scale(1.01);
+        }
+        
+        .highlight-box.high {
+            background: rgba(239, 68, 68, 0.3);
+            border-color: var(--high-risk);
+        }
+        
+        .highlight-box.medium {
+            background: rgba(249, 115, 22, 0.3);
+            border-color: var(--medium-risk);
+        }
+        
+        .highlight-box.low {
+            background: rgba(34, 197, 94, 0.3);
+            border-color: var(--low-risk);
+        }
+        
+        .highlight-label {
+            position: absolute;
+            top: -22px;
+            left: 0;
+            background: var(--gray-900);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        .upload-section {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding: 40px;
+        }
+        
+        .upload-area {
+            background: var(--white);
+            border: 2px dashed var(--gray-200);
+            border-radius: 12px;
+            padding: 60px 40px;
+            text-align: center;
+            cursor: pointer;
+            max-width: 500px;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary-purple);
+            background: #fafaff;
+        }
+
+        .upload-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+        }
+
+        .upload-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--gray-900);
+        }
+
+        .upload-subtitle {
+            color: var(--gray-600);
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .hidden { display: none !important; }
+
+        /* Ensure proper scrolling */
+        .left-panel::-webkit-scrollbar,
+        .middle-panel::-webkit-scrollbar,
+        .right-panel::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .left-panel::-webkit-scrollbar-track,
+        .middle-panel::-webkit-scrollbar-track,
+        .right-panel::-webkit-scrollbar-track {
+            background: var(--gray-100);
+        }
+
+        .left-panel::-webkit-scrollbar-thumb,
+        .middle-panel::-webkit-scrollbar-thumb,
+        .right-panel::-webkit-scrollbar-thumb {
+            background: var(--gray-300);
+            border-radius: 4px;
+        }
+
+        .left-panel::-webkit-scrollbar-thumb:hover,
+        .middle-panel::-webkit-scrollbar-thumb:hover,
+        .right-panel::-webkit-scrollbar-thumb:hover {
+            background: var(--gray-400);
+        }
+
+        .zoom-controls {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 8px;
+            display: flex;
+            gap: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            z-index: 100;
+        }
+
+        .zoom-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--white);
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .zoom-btn:hover {
+            background: var(--gray-50);
+        }
+
+        .zoom-display {
+            padding: 0 8px;
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            color: var(--gray-600);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.7; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.03); }
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div style="display: flex; align-items: center;">
+            <div class="logo">L</div>
+            <div class="brand">LegalCopilot - Working Scrolling</div>
+        </div>
+        <div>
+            <button id="newBtn" class="btn hidden">New Contract</button>
+        </div>
+    </header>
+
+    <div id="uploadSection" class="upload-section">
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📄</div>
+            <div class="upload-title">Upload Contract</div>
+            <div class="upload-subtitle">
+                Working version with proper scrolling in all panels.<br>
+                Drop your PDF here or click to browse.
+            </div>
+            <button class="btn btn-primary" id="uploadBtn">Choose PDF File</button>
+            <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+        </div>
+    </div>
+
+    <div id="mainLayout" class="container hidden">
+        <div class="left-panel">
+            <h2>Contract Clauses</h2>
+            <div style="font-size: 0.8rem; color: var(--gray-600); margin-bottom: 20px;">
+                Click clauses to navigate and highlight
+            </div>
+            <div id="clausesList">
+                <!-- Will be populated dynamically -->
+            </div>
+        </div>
+
+        <div class="middle-panel" id="pdfViewer">
+            <div class="pdf-container" id="pdfContainer">
+                <!-- PDF pages will be rendered here -->
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <h2 id="editorTitle">Select a clause</h2>
+            <div id="editorContent">
+                <p style="color: var(--gray-600); font-size: 0.9rem; line-height: 1.5;">
+                    Click on any clause in the left panel to view details and navigate to its location in the PDF.
+                </p>
+                <div style="margin-top: 20px; padding: 16px; background: var(--gray-50); border-radius: 8px;">
+                    <h4 style="font-size: 0.9rem; margin-bottom: 12px;">Risk Colors:</h4>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <div style="width: 12px; height: 12px; background: var(--high-risk); border-radius: 2px;"></div>
+                        <span style="font-size: 0.8rem;">High Risk</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                        <div style="width: 12px; height: 12px; background: var(--medium-risk); border-radius: 2px;"></div>
+                        <span style="font-size: 0.8rem;">Medium Risk</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <div style="width: 12px; height: 12px; background: var(--low-risk); border-radius: 2px;"></div>
+                        <span style="font-size: 0.8rem;">Low Risk</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="zoomControls" class="zoom-controls hidden">
+        <button class="zoom-btn" onclick="zoomOut()">−</button>
+        <div class="zoom-display" id="zoomDisplay">100%</div>
+        <button class="zoom-btn" onclick="zoomIn()">+</button>
+    </div>
+
+    <script>
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+        
+        let currentPDF = null;
+        let currentZoom = 1.2;
+        let activeClause = null;
+
+        // Contract clauses with article references and detailed information
+        const contractClauses = [
+            {
+                id: 'governance',
+                title: 'Governance Compromise',
+                summary: 'Holder must vote according to President instructions',
+                riskLevel: 'high',
+                article: '2.1',
+                pageNumber: 7,
+                coordinates: [
+                    { left: 5, top: 35, width: 90, height: 4 },
+                    { left: 5, top: 40, width: 88, height: 4 },
+                    { left: 5, top: 45, width: 85, height: 4 }
+                ],
+                locationDetails: 'Section 2.1 "Exercise of the voting rights of the Holder", lines 3-8',
+                originalText: 'To give effect to the Governance Compromise, the Holder agrees, upon exercise of its BSPCE leading to the Holder effectively holding the Holder\'s Shares, in all shareholders decisions relating to the Company and for which the Holder has voting rights, to vote in strict accordance with the instructions provided by the President of the Company, as communicated to the Holder at least five (5) days before the shareholders decisions, via e-mail and text message.',
+                riskExplanation: 'This clause removes your voting independence and makes you vote according to the President\'s instructions in all shareholder decisions.',
+                suggestedAction: 'Negotiate for voting autonomy in specific situations or request board representation rights.'
+            },
+            {
+                id: 'noncompete',
+                title: 'Non-Compete & Non-Solicit',
+                summary: 'Non-compete restrictions remain applicable per SHA',
+                riskLevel: 'medium',
+                article: '7.1-7.2',
+                pageNumber: 17,
+                coordinates: [
+                    { left: 8, top: 22, width: 84, height: 6 },
+                    { left: 8, top: 29, width: 84, height: 6 },
+                    { left: 8, top: 36, width: 80, height: 6 }
+                ],
+                locationDetails: 'Section 7 "Non-Compete and Non-Solicit", subsections 7.1 and 7.2',
+                originalText: '7.1 For the avoidance of doubts, it is reminded that the Holder has been freed of the non-compete undertaking provided for in shareholders\' agreement entered into between the Parties on 4 July 2023 (the "SHA") by decision of the Board of Directors dated [_]. 7.2 Notwithstanding Clause 10 below, the Non-Sollicit applicable to the Holder pursuant to the SHA shall however remain fully applicable and the Holder shall remain subject, pursuant to the terms of the SHA, to the non-solicit undertakings provided for in the SHA.',
+                riskExplanation: 'While non-compete is lifted, non-solicitation restrictions still apply, limiting your ability to hire former colleagues.',
+                suggestedAction: 'Review the SHA terms to understand the scope and duration of non-solicitation restrictions.'
+            },
+            {
+                id: 'dragalong',
+                title: 'Drag Along Right',
+                summary: 'Main shareholders can force you to sell your shares',
+                riskLevel: 'high',
+                article: '4.1',
+                pageNumber: 13,
+                coordinates: [
+                    { left: 6, top: 15, width: 88, height: 5 },
+                    { left: 6, top: 21, width: 88, height: 5 },
+                    { left: 6, top: 27, width: 88, height: 5 },
+                    { left: 6, top: 33, width: 85, height: 5 }
+                ],
+                locationDetails: 'Section 4 "Drag Along Right", subsection 4.1 "General Rules"',
+                originalText: 'It is hereby agreed that: (a) should any Third Party, acting alone or in concert within the meaning of article L. 233-10 of the French commercial code (the "Offeror") offer to purchase at least ninety-five per cent (95%) of the share capital of the Company (an "Offer"), whether for cash and/or for Shares (e.g., a merger), and (b) if such Offer is accepted by the Shareholders holding at least 50% of the share capital of the Company on a converted basis...',
+                riskExplanation: 'If majority shareholders accept a 95%+ buyout offer, you can be forced to sell your shares even if you disagree.',
+                suggestedAction: 'Consider negotiating for a higher acceptance threshold or fair value determination process.'
+            },
+            {
+                id: 'tagalong',
+                title: 'Tag Along Right',
+                summary: 'You can sell alongside major shareholders in certain sales',
+                riskLevel: 'low',
+                article: '3.6',
+                pageNumber: 11,
+                coordinates: [
+                    { left: 10, top: 38, width: 80, height: 4 },
+                    { left: 10, top: 43, width: 80, height: 4 },
+                    { left: 10, top: 48, width: 75, height: 4 }
+                ],
+                locationDetails: 'Section 3.6 "Tag Along Right", subsection 3.6.1 "Principle"',
+                originalText: 'Subject to the pre-emptive rights provided for in Clause 3.5 above, in the events that one or several Parties (the "Transferor Shareholder(s)") consider(s) to Transfer any or part of its Securities of the Company to a Party (other than Resonance) or a Third Party Transferee and that, as a result of such Transfer, such Party or Transferee would hold, directly or indirectly, more than 50% of the share capital and/or voting rights of the Company, the Holder shall have a tag-along right...',
+                riskExplanation: 'This protects you by allowing participation in major sales at the same terms as selling shareholders.',
+                suggestedAction: 'This is generally favorable - ensure the terms are clearly defined and enforceable.'
+            },
+            {
+                id: 'priority',
+                title: 'Priority Allocation',
+                summary: 'Complex waterfall allocation rules determine exit proceeds',
+                riskLevel: 'medium',
+                article: '5.2',
+                pageNumber: 14,
+                coordinates: [
+                    { left: 7, top: 25, width: 86, height: 6 },
+                    { left: 7, top: 32, width: 86, height: 6 },
+                    { left: 7, top: 39, width: 84, height: 6 },
+                    { left: 7, top: 46, width: 80, height: 6 }
+                ],
+                locationDetails: 'Section 5.2 "Sale of the Company", waterfall allocation mechanism',
+                originalText: 'In case of a sale (vente) to one or several Third-Parties of all or substantially all of the assets of the Company or of the shares of the Company leading to a change of Control of the Company, the portion of the total Sale price (the "Sale Price") payable to Parties who are amongst the sellers (the "Selling Parties") shall be allocated amongst the Selling Parties as follows: (a) first, the nominal value of the sold Shares shall be allocated among all the Selling Parties pro rata the number of Shares respectively sold by each of them in the Sale...',
+                riskExplanation: 'Complex allocation rules may significantly reduce your share of exit proceeds compared to simple pro-rata distribution.',
+                suggestedAction: 'Model different exit scenarios to understand how the waterfall affects your potential returns.'
+            }
+        ];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Initializing working scrolling version...');
+            
+            const uploadArea = document.getElementById('uploadArea');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const fileInput = document.getElementById('fileInput');
+            
+            uploadArea.addEventListener('click', () => fileInput.click());
+            uploadBtn.addEventListener('click', (e) => { e.stopPropagation(); fileInput.click(); });
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = 'var(--primary-purple)';
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.style.borderColor = '';
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.style.borderColor = '';
+                if (e.dataTransfer.files.length > 0) {
+                    processFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    processFile(e.target.files[0]);
+                }
+            });
+            
+            document.getElementById('newBtn').addEventListener('click', resetInterface);
+        });
+
+        // Process PDF file
+        async function processFile(file) {
+            if (!file.type.includes('pdf')) {
+                alert('Please upload a PDF file.');
+                return;
+            }
+            
+            try {
+                console.log('Loading PDF:', file.name);
+                const pdfDoc = await loadPDF(file);
+                currentPDF = pdfDoc;
+                
+                await renderPDF();
+                populateClauses();
+                createHighlights();
+                
+                // Show interface
+                document.getElementById('uploadSection').classList.add('hidden');
+                document.getElementById('mainLayout').classList.remove('hidden');
+                document.getElementById('zoomControls').classList.remove('hidden');
+                document.getElementById('newBtn').classList.remove('hidden');
+                
+                console.log('✅ PDF loaded successfully with working scrolling');
+            } catch (error) {
+                console.error('Error loading PDF:', error);
+                alert('Error loading PDF: ' + error.message);
+            }
+        }
+
+        // Load PDF
+        function loadPDF(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async function() {
+                    try {
+                        const pdf = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
+                        resolve(pdf);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = () => reject(new Error('Failed to read file'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // Render PDF
+        async function renderPDF() {
+            const container = document.getElementById('pdfContainer');
+            container.innerHTML = '';
+            
+            if (!currentPDF) return;
+            
+            console.log(`Rendering ${currentPDF.numPages} pages...`);
+            
+            for (let pageNum = 1; pageNum <= currentPDF.numPages; pageNum++) {
+                const page = await currentPDF.getPage(pageNum);
+                const viewport = page.getViewport({ scale: currentZoom });
+                
+                // Create page container
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'pdf-page';
+                pageDiv.id = `page-${pageNum}`;
+                pageDiv.style.width = viewport.width + 'px';
+                pageDiv.style.height = viewport.height + 'px';
+                pageDiv.setAttribute('data-page', pageNum);
+                
+                // Render to canvas
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                
+                await page.render({
+                    canvasContext: ctx,
+                    viewport: viewport
+                }).promise;
+                
+                pageDiv.appendChild(canvas);
+                
+                // Add highlight overlay
+                const overlay = document.createElement('div');
+                overlay.className = 'highlight-overlay';
+                overlay.id = `overlay-${pageNum}`;
+                pageDiv.appendChild(overlay);
+                
+                container.appendChild(pageDiv);
+                
+                // Add page number indicator
+                const pageNumber = document.createElement('div');
+                pageNumber.style.cssText = `
+                    position: absolute;
+                    bottom: -30px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(0,0,0,0.7);
+                    color: white;
+                    padding: 4px 12px;
+                    border-radius: 4px;
+                    font-size: 11px;
+                    font-weight: 500;
+                `;
+                pageNumber.textContent = `Page ${pageNum}`;
+                pageDiv.appendChild(pageNumber);
+            }
+            
+            updateZoomDisplay();
+            console.log(`✅ Rendered ${currentPDF.numPages} pages`);
+        }
+
+        // Populate clauses list
+        function populateClauses() {
+            const clausesList = document.getElementById('clausesList');
+            clausesList.innerHTML = '';
+            
+            contractClauses.forEach((clause, index) => {
+                const clauseElement = document.createElement('div');
+                clauseElement.className = 'clause-item';
+                clauseElement.setAttribute('data-clause-id', clause.id);
+                
+                clauseElement.innerHTML = `
+                    <div class="clause-number ${clause.riskLevel}">
+                        ${index + 1}
+                    </div>
+                    <div class="clause-content">
+                        <div class="clause-title">${clause.title}</div>
+                        <div class="clause-summary">${clause.summary}</div>
+                        <div class="clause-location">
+                            📍 Article ${clause.article} • Page ${clause.pageNumber} • ${clause.riskLevel.toUpperCase()}
+                        </div>
+                    </div>
+                `;
+                
+                clauseElement.addEventListener('click', () => selectClause(clause));
+                clausesList.appendChild(clauseElement);
+            });
+        }
+
+        // Create highlights on PDF with multiple text-line highlighting
+        function createHighlights() {
+            contractClauses.forEach(clause => {
+                const overlay = document.getElementById(`overlay-${clause.pageNumber}`);
+                if (!overlay) return;
+                
+                const pageDiv = document.getElementById(`page-${clause.pageNumber}`);
+                const pageWidth = pageDiv.offsetWidth;
+                const pageHeight = pageDiv.offsetHeight;
+                
+                // Create multiple highlight rectangles for better text coverage
+                clause.coordinates.forEach((coord, index) => {
+                    const left = (coord.left / 100) * pageWidth;
+                    const top = (coord.top / 100) * pageHeight;
+                    const width = (coord.width / 100) * pageWidth;
+                    const height = (coord.height / 100) * pageHeight;
+                    
+                    // Create highlight box for each line/section
+                    const highlightBox = document.createElement('div');
+                    highlightBox.className = `highlight-box ${clause.riskLevel}`;
+                    highlightBox.id = `highlight-${clause.id}-${index}`;
+                    highlightBox.style.left = left + 'px';
+                    highlightBox.style.top = top + 'px';
+                    highlightBox.style.width = width + 'px';
+                    highlightBox.style.height = height + 'px';
+                    
+                    // Add label only to first highlight
+                    if (index === 0) {
+                        const label = document.createElement('div');
+                        label.className = 'highlight-label';
+                        label.textContent = `Art. ${clause.article}: ${clause.title}`;
+                        highlightBox.appendChild(label);
+                    }
+                    
+                    // Click handler
+                    highlightBox.addEventListener('click', () => selectClause(clause));
+                    
+                    overlay.appendChild(highlightBox);
+                });
+            });
+        }
+
+        // Select clause and navigate
+        function selectClause(clause) {
+            console.log('Selected clause:', clause.title);
+            activeClause = clause;
+            
+            // Update active states
+            document.querySelectorAll('.clause-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-clause-id="${clause.id}"]`).classList.add('active');
+            
+            // Navigate to page - FIXED SCROLLING CALCULATION
+            const pageElement = document.getElementById(`page-${clause.pageNumber}`);
+            const pdfViewer = document.getElementById('pdfViewer');
+            
+            if (pageElement && pdfViewer) {
+                // Use offsetTop for accurate positioning within the scroll container
+                const pageOffsetTop = pageElement.offsetTop;
+                
+                // Scroll to the page with some padding from the top
+                const targetScroll = pageOffsetTop - 100;
+                
+                console.log(`📍 Scrolling to page ${clause.pageNumber} (Article ${clause.article})`);
+                console.log(`📐 Page offsetTop: ${pageOffsetTop}, Target scroll: ${targetScroll}`);
+                
+                // Smooth scroll to the page
+                pdfViewer.scrollTo({
+                    top: Math.max(0, targetScroll),
+                    behavior: 'smooth'
+                });
+                
+                // Visual feedback for the page  
+                pageElement.style.transition = 'all 0.5s ease';
+                pageElement.style.boxShadow = '0 0 20px rgba(99, 102, 241, 0.4)';
+                pageElement.style.transform = 'scale(1.01)';
+                
+                setTimeout(() => {
+                    pageElement.style.boxShadow = '';
+                    pageElement.style.transform = '';
+                }, 2000);
+                
+                console.log(`✅ Scrolled to Article ${clause.article} on page ${clause.pageNumber}`);
+            } else {
+                console.error(`❌ Could not find page element: page-${clause.pageNumber}`);
+            }
+            
+            // Update editor panel
+            updateEditorPanel(clause);
+            
+            // Animate all highlights for this clause
+            clause.coordinates.forEach((_, index) => {
+                const highlight = document.getElementById(`highlight-${clause.id}-${index}`);
+                if (highlight) {
+                    highlight.style.animation = 'pulse 1s ease-in-out 3';
+                    // Stagger animation slightly for visual effect
+                    highlight.style.animationDelay = `${index * 0.1}s`;
+                }
+            });
+        }
+
+        // Update editor panel
+        function updateEditorPanel(clause) {
+            const editorTitle = document.getElementById('editorTitle');
+            const editorContent = document.getElementById('editorContent');
+            
+            editorTitle.textContent = clause.title;
+            
+            const colors = {
+                high: 'var(--high-risk)',
+                medium: 'var(--medium-risk)',
+                low: 'var(--low-risk)'
+            };
+            
+            editorContent.innerHTML = `
+                <div style="margin-bottom: 20px;">
+                    <div style="display: inline-flex; align-items: center; padding: 8px 16px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; background: rgba(${clause.riskLevel === 'high' ? '239,68,68' : clause.riskLevel === 'medium' ? '249,115,22' : '34,197,94'}, 0.1); color: ${colors[clause.riskLevel]};">
+                        ${clause.riskLevel} Risk
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h4 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 12px;">📍 Precise Location</h4>
+                    <div style="background: var(--gray-50); padding: 12px; border-radius: 6px; font-size: 0.8rem; color: var(--gray-700);">
+                        <div style="margin-bottom: 8px;"><strong>Article:</strong> ${clause.article}</div>
+                        <div style="margin-bottom: 8px;"><strong>Page:</strong> ${clause.pageNumber}</div>
+                        <div style="margin-bottom: 8px;"><strong>Section:</strong> ${clause.locationDetails}</div>
+                        <div><strong>Highlights:</strong> ${clause.coordinates.length} text sections marked</div>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h4 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 12px;">📄 Original Text</h4>
+                    <div style="background: var(--gray-50); padding: 16px; border-radius: 6px; border-left: 4px solid ${colors[clause.riskLevel]}; font-size: 0.8rem; line-height: 1.6; color: var(--gray-700); max-height: 200px; overflow-y: auto;">
+                        ${clause.originalText}
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <h4 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 12px;">⚠️ Risk Analysis</h4>
+                    <div style="background: rgba(${clause.riskLevel === 'high' ? '239,68,68' : clause.riskLevel === 'medium' ? '249,115,22' : '34,197,94'}, 0.05); padding: 16px; border-radius: 6px; border-left: 4px solid ${colors[clause.riskLevel]}; font-size: 0.8rem; line-height: 1.6; color: var(--gray-700);">
+                        ${clause.riskExplanation}
+                    </div>
+                </div>
+                
+                <div>
+                    <h4 style="font-size: 0.9rem; font-weight: 600; margin-bottom: 12px;">💡 Suggested Action</h4>
+                    <div style="background: var(--gray-50); padding: 16px; border-radius: 6px; font-size: 0.8rem; line-height: 1.6; color: var(--gray-700);">
+                        ${clause.suggestedAction}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Zoom functions
+        async function zoomIn() {
+            currentZoom = Math.min(2.0, currentZoom + 0.2);
+            await renderPDF();
+            createHighlights();
+        }
+        
+        async function zoomOut() {
+            currentZoom = Math.max(0.8, currentZoom - 0.2);
+            await renderPDF();
+            createHighlights();
+        }
+        
+        function updateZoomDisplay() {
+            document.getElementById('zoomDisplay').textContent = Math.round(currentZoom * 100) + '%';
+        }
+
+        // Reset interface
+        function resetInterface() {
+            document.getElementById('mainLayout').classList.add('hidden');
+            document.getElementById('uploadSection').classList.remove('hidden');
+            document.getElementById('zoomControls').classList.add('hidden');
+            document.getElementById('newBtn').classList.add('hidden');
+            document.getElementById('fileInput').value = '';
+            
+            currentPDF = null;
+            activeClause = null;
+        }
+
+        console.log('✅ Working Scrolling Highlighting System loaded');
+    </script>
+</body>
+</html>
