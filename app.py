@@ -117,6 +117,24 @@ def index():
     """Main page"""
     return render_template('index.html')
 
+@app.route('/working-pdf-highlighter.html')
+def working_pdf_highlighter():
+    """Working PDF highlighter with three-panel layout"""
+    with open('working-pdf-highlighter.html', 'r', encoding='utf-8') as f:
+        return f.read()
+
+@app.route('/semantic-clause-highlighter.html') 
+def semantic_clause_highlighter():
+    """Semantic clause highlighter"""
+    with open('semantic-clause-highlighter.html', 'r', encoding='utf-8') as f:
+        return f.read()
+
+@app.route('/integrated-highlighter.html')
+def integrated_highlighter():
+    """Integrated frontend-backend highlighter"""
+    with open('integrated-highlighter.html', 'r', encoding='utf-8') as f:
+        return f.read()
+
 @app.route('/api/analyze', methods=['POST'])
 def analyze_contract():
     """API endpoint for contract analysis"""
