@@ -1,0 +1,22 @@
+2025-08-07 00:05:20,967 - root - INFO - CORS configured for origins: ['*']
+2025-08-07 00:05:20,967 - root - INFO - Using memory for rate limiting
+2025-08-07 00:05:20,969 - root - INFO - Security headers configured
+2025-08-07 00:05:20,971 - root - INFO - Contract Explainer Backend Starting...
+2025-08-07 00:05:20,971 - root - INFO - Server will be available at http://localhost:5001
+2025-08-07 00:05:20,971 - root - INFO - Deepseek API Key: OK
+2025-08-07 00:05:20,971 - root - INFO - Environment: development
+2025-08-07 00:05:20,971 - root - INFO - Debug mode: True
+2025-08-07 00:05:20,977 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://localhost:5001
+2025-08-07 00:05:20,977 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-08-07 00:08:29,761 - root - INFO - CORS configured for origins: ['*']
+2025-08-07 00:08:29,761 - root - INFO - Using memory for rate limiting
+2025-08-07 00:08:29,762 - root - INFO - Security headers configured
+2025-08-07 00:08:29,764 - root - INFO - Contract Explainer Backend Starting...
+2025-08-07 00:08:29,764 - root - INFO - Server will be available at http://localhost:5001
+2025-08-07 00:08:29,764 - root - INFO - Deepseek API Key: OK
+2025-08-07 00:08:29,764 - root - INFO - Environment: development
+2025-08-07 00:08:29,764 - root - INFO - Debug mode: True
+2025-08-07 00:08:29,769 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on http://localhost:5001
+2025-08-07 00:08:29,769 - werkzeug - INFO - [33mPress CTRL+C to quit[0m

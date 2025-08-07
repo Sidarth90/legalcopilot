@@ -1,0 +1,1884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LegalCopilot - AI Contract Review Interface</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            /* Modern Legal Tech Colors - Inspired by Juro */
+            --primary-purple: #6366f1;
+            --primary-purple-dark: #4f46e5;
+            --primary-purple-light: #e0e7ff;
+            --success-green: #10b981;
+            --danger-red: #ef4444;
+            --warning-orange: #f59e0b;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --white: #ffffff;
+            
+            /* Semantic Colors */
+            --high-risk: var(--danger-red);
+            --medium-risk: var(--warning-orange);
+            --low-risk: var(--gray-400);
+            --clause-highlight: rgba(255, 165, 0, 0.25);
+            --clause-border: #ff9500;
+            
+            /* Risk Level Highlight Colors */
+            --high-risk-highlight: rgba(239, 68, 68, 0.25);
+            --high-risk-border: #ef4444;
+            --medium-risk-highlight: rgba(249, 115, 22, 0.25);
+            --medium-risk-border: #f97316;
+            --low-risk-highlight: rgba(34, 197, 94, 0.25);
+            --low-risk-border: #22c55e;
+            --hover-bg: var(--gray-50);
+            --active-bg: var(--primary-purple-light);
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+            line-height: 1.5;
+            color: var(--gray-900);
+            background: var(--gray-50);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow: hidden;
+        }
+        
+        body.debug-mode .text-layer {
+            opacity: 0.3 !important;
+            background: rgba(255, 0, 0, 0.1) !important;
+            border: 1px dashed red !important;
+        }
+
+        /* Header */
+        .header {
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-200);
+            padding: 0 1.5rem;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .logo {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary-purple), var(--primary-purple-dark));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+            font-weight: 700;
+        }
+        
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--gray-900);
+            letter-spacing: -0.025em;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+            letter-spacing: -0.025em;
+        }
+        
+        .btn-primary {
+            background: var(--primary-purple);
+            color: var(--white);
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-purple-dark);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-secondary {
+            background: var(--white);
+            color: var(--gray-700);
+            border: 1px solid var(--gray-300);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+        }
+
+        /* Upload Section */
+        .upload-section {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: var(--gray-50);
+        }
+        
+        .upload-container {
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .upload-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--gray-900);
+            margin-bottom: 1rem;
+            letter-spacing: -0.05em;
+            line-height: 1.1;
+        }
+        
+        .upload-subtitle {
+            font-size: 1.125rem;
+            color: var(--gray-600);
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+        }
+        
+        .upload-area {
+            background: var(--white);
+            border: 2px dashed var(--gray-300);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--primary-purple);
+            background: var(--primary-purple-light);
+            transform: translateY(-2px);
+        }
+        
+        .upload-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1.5rem;
+            background: var(--gray-100);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+        
+        .upload-text {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 0.5rem;
+        }
+        
+        .upload-hint {
+            font-size: 0.875rem;
+            color: var(--gray-500);
+            margin-bottom: 2rem;
+        }
+
+        /* Three-Panel Layout */
+        .main-layout {
+            position: fixed;
+            top: 64px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: grid;
+            grid-template-columns: 380px 1fr 380px;
+            background: var(--gray-50);
+            transition: grid-template-columns 0.3s ease;
+        }
+
+        .main-layout.editor-collapsed {
+            grid-template-columns: 380px 1fr 0px;
+        }
+
+        /* LEFT PANEL - Contract Summary */
+        .summary-panel {
+            background: var(--white);
+            border-right: 1px solid var(--gray-200);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .summary-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+            background: var(--white);
+            flex-shrink: 0;
+        }
+        
+        .summary-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.025em;
+        }
+        
+        .summary-subtitle {
+            font-size: 0.875rem;
+            color: var(--gray-500);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success-green);
+        }
+        
+        .summary-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        /* Contract Overview */
+        .contract-overview {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .overview-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .overview-stats {
+            background: var(--gray-50);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-purple);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+            margin-top: 0.25rem;
+        }
+
+        /* Contract Clauses List */
+        .clauses-section {
+            padding: 1.5rem;
+        }
+
+        .clauses-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .clause-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            margin-bottom: 0.75rem;
+            border: 1px solid var(--gray-200);
+            background: var(--white);
+            position: relative;
+        }
+
+        .clause-item:hover {
+            background: var(--hover-bg);
+            border-color: var(--gray-300);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .clause-item.active {
+            background: var(--active-bg);
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .clause-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: var(--white);
+            flex-shrink: 0;
+        }
+
+        .clause-number.high { background: var(--high-risk); }
+        .clause-number.medium { background: var(--medium-risk); }
+        .clause-number.low { background: var(--low-risk); }
+
+        .clause-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .clause-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 0.25rem;
+            line-height: 1.4;
+        }
+
+        .clause-summary {
+            font-size: 0.75rem;
+            color: var(--gray-600);
+            line-height: 1.4;
+            margin-bottom: 0.5rem;
+        }
+
+        .clause-location {
+            font-size: 0.75rem;
+            color: var(--primary-purple);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        /* CENTER PANEL - PDF Viewer */
+        .pdf-panel {
+            display: flex;
+            flex-direction: column;
+            background: var(--gray-100);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .pdf-header {
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-200);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 56px;
+            flex-shrink: 0;
+        }
+        
+        .pdf-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .pdf-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+        
+        .pdf-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .control-btn {
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--gray-300);
+            background: var(--white);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            font-weight: 500;
+        }
+        
+        .control-btn:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+        }
+        
+        .zoom-display {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+            font-weight: 500;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .pdf-viewer {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: auto;
+            background: var(--gray-200);
+            display: flex;
+            justify-content: center;
+            padding: 2rem;
+            scroll-behavior: smooth;
+            position: relative;
+        }
+        
+        .pdf-container {
+            background: var(--white);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-radius: 12px;
+            overflow: visible;
+            max-width: 100%;
+            width: fit-content;
+            position: relative;
+            min-height: 100%;
+        }
+        
+        .pdf-page {
+            background: var(--white);
+            position: relative;
+            border-bottom: 1px solid var(--gray-200);
+            margin-bottom: 1rem;
+        }
+        
+        .pdf-page:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .pdf-page canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-width: none;
+        }
+
+        /* Text Layer for Selection */
+        .text-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            opacity: 0;
+            line-height: 1.0;
+            pointer-events: auto;
+        }
+
+        .text-layer > span {
+            color: transparent;
+            position: absolute;
+            white-space: pre;
+            cursor: text;
+            transform-origin: 0% 0%;
+            user-select: text;
+        }
+
+        .text-layer.debug {
+            opacity: 0.3;
+            background: rgba(255, 0, 0, 0.1);
+        }
+
+        /* Clause Highlights in PDF */
+        .clause-highlight {
+            position: absolute;
+            background: var(--clause-highlight);
+            border: 2px dotted var(--clause-border);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 10;
+            border-radius: 4px;
+            pointer-events: auto;
+            min-height: 16px;
+            min-width: 20px;
+        }
+
+        .clause-highlight.active {
+            background: rgba(255, 165, 0, 0.45);
+            border: 3px dotted #cc7700;
+            box-shadow: 0 0 0 4px rgba(255, 165, 0, 0.2);
+            z-index: 20;
+            animation: highlightPulse 2s ease-in-out;
+        }
+
+        .clause-highlight:hover {
+            background: rgba(255, 165, 0, 0.4);
+            transform: scale(1.02);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 15;
+        }
+
+        @keyframes highlightPulse {
+            0%, 100% { 
+                box-shadow: 0 0 0 4px rgba(255, 165, 0, 0.2);
+            }
+            50% { 
+                box-shadow: 0 0 0 8px rgba(255, 165, 0, 0.1);
+            }
+        }
+
+        /* RIGHT PANEL - Clause Editor */
+        .editor-panel {
+            background: var(--white);
+            border-left: 1px solid var(--gray-200);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .editor-panel.collapsed {
+            width: 0;
+            opacity: 0;
+            border-left: none;
+        }
+        
+        .editor-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+            background: var(--white);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: between;
+        }
+        
+        .editor-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            letter-spacing: -0.025em;
+            flex: 1;
+        }
+
+        .collapse-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--gray-300);
+            background: var(--white);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            color: var(--gray-600);
+        }
+
+        .collapse-btn:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+        }
+        
+        .editor-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .editor-section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .original-text {
+            background: var(--gray-50);
+            border-left: 4px solid var(--primary-purple);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            color: var(--gray-700);
+        }
+
+        .suggested-rewrite {
+            background: var(--success-green);
+            background: rgba(16, 185, 129, 0.05);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            color: var(--gray-700);
+        }
+
+        .risk-analysis {
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .risk-level {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+        }
+
+        .risk-level.high {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger-red);
+        }
+
+        .risk-level.medium {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning-orange);
+        }
+
+        .risk-level.low {
+            background: rgba(156, 163, 175, 0.1);
+            color: var(--gray-500);
+        }
+
+        .risk-explanation {
+            font-size: 0.875rem;
+            color: var(--gray-700);
+            line-height: 1.5;
+        }
+
+        /* Processing Overlay */
+        .processing-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .processing-content {
+            text-align: center;
+            max-width: 400px;
+        }
+        
+        .processing-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--gray-200);
+            border-top-color: var(--primary-purple);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+        
+        .processing-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.025em;
+        }
+        
+        .processing-subtitle {
+            font-size: 0.875rem;
+            color: var(--gray-500);
+        }
+
+        /* Page Numbers */
+        .page-number {
+            position: absolute;
+            bottom: -2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* Animations */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .scroll-smooth {
+            scroll-behavior: smooth;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1400px) {
+            .main-layout {
+                grid-template-columns: 320px 1fr 320px;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 280px 1fr 0px;
+            }
+            .editor-panel {
+                position: fixed;
+                right: 0;
+                top: 64px;
+                bottom: 0;
+                width: 380px;
+                z-index: 100;
+                box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: 40vh 1fr;
+            }
+            
+            .summary-panel {
+                border-right: none;
+                border-bottom: 1px solid var(--gray-200);
+            }
+            
+            .brand {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo-section">
+            <div class="logo">L</div>
+            <div class="brand">LegalCopilot</div>
+        </div>
+        <div class="header-actions">
+            <button id="newContractBtn" class="btn btn-secondary hidden">
+                New Contract
+            </button>
+            <button id="shareBtn" class="btn btn-primary hidden">
+                Share Analysis
+            </button>
+        </div>
+    </header>
+
+    <!-- Upload Section -->
+    <div id="uploadSection" class="upload-section">
+        <div class="upload-container">
+            <h1 class="upload-title">AI Contract Review</h1>
+            <p class="upload-subtitle">
+                Upload your contract and get instant AI-powered analysis with intelligent clause highlighting and recommendations
+            </p>
+            
+            <div id="uploadArea" class="upload-area">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">Drop your contract here</div>
+                <div class="upload-hint">or click to browse files (PDF format)</div>
+                <button id="uploadBtn" class="btn btn-primary">Choose File</button>
+                <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+            </div>
+        </div>
+    </div>
+
+    <!-- Processing Overlay -->
+    <div id="processingOverlay" class="processing-overlay hidden">
+        <div class="processing-content">
+            <div class="processing-spinner"></div>
+            <h3 class="processing-title">Analyzing Contract</h3>
+            <p class="processing-subtitle">AI is reviewing clauses and identifying key terms...</p>
+        </div>
+    </div>
+
+    <!-- Three-Panel Main Layout -->
+    <div id="mainLayout" class="main-layout hidden">
+        <!-- LEFT PANEL - Contract Summary -->
+        <div class="summary-panel">
+            <div class="summary-header">
+                <h2 class="summary-title">Contract Summary</h2>
+                <div class="summary-subtitle">
+                    <div class="status-indicator"></div>
+                    <span id="analysisStatus">Analysis complete</span>
+                </div>
+            </div>
+            
+            <div class="summary-content">
+                <!-- Contract Overview -->
+                <div class="contract-overview">
+                    <h3 class="overview-title">Document Overview</h3>
+                    <div class="overview-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="pageCount">0</div>
+                            <div class="stat-label">Pages</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="clauseCount">0</div>
+                            <div class="stat-label">Key Clauses</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Contract Clauses -->
+                <div class="clauses-section">
+                    <h3 class="clauses-title">Key Contract Clauses</h3>
+                    <div id="clausesList">
+                        <!-- Dynamic clauses will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENTER PANEL - PDF Viewer -->
+        <div class="pdf-panel">
+            <div class="pdf-header">
+                <div class="pdf-info">
+                    <span>📄</span>
+                    <span id="pdfTitle" class="pdf-title">Contract Document</span>
+                </div>
+                <div class="pdf-controls">
+                    <button class="control-btn" onclick="zoomOut()" title="Zoom Out">−</button>
+                    <span class="zoom-display" id="zoomDisplay">100%</span>
+                    <button class="control-btn" onclick="zoomIn()" title="Zoom In">+</button>
+                    <button class="control-btn" onclick="fitWidth()" title="Fit Width">⚡</button>
+                </div>
+            </div>
+            
+            <div class="pdf-viewer scroll-smooth" id="pdfViewer">
+                <div class="pdf-container" id="pdfContainer">
+                    <!-- PDF pages will be rendered here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL - Clause Editor -->
+        <div class="editor-panel" id="editorPanel">
+            <div class="editor-header">
+                <h2 class="editor-title">Clause Analysis</h2>
+                <button class="collapse-btn" id="collapseBtn" onclick="toggleEditor()">×</button>
+            </div>
+            
+            <div class="editor-content" id="editorContent">
+                <div class="editor-section">
+                    <div class="section-title">Select a clause</div>
+                    <p style="color: var(--gray-500); font-size: 0.875rem; margin-bottom: 1.5rem;">
+                        Click on any clause in the contract summary or PDF to view detailed analysis and suggested improvements.
+                    </p>
+                    
+                    <div class="section-title">Keyboard shortcuts</div>
+                    <div style="color: var(--gray-600); font-size: 0.75rem; line-height: 1.6;">
+                        <div><kbd style="background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-family: monospace;">Ctrl+Shift+D</kbd> Toggle debug mode</div>
+                        <div><kbd style="background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-family: monospace;">Ctrl+Shift+H</kbd> Re-highlight clauses</div>
+                        <div><kbd style="background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-family: monospace;">↑/↓</kbd> Navigate between clauses</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('LegalCopilot AI Contract Review Interface loading...');
+        
+        // Initialize PDF.js
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+        
+        // Global state
+        let currentPDF = null;
+        let currentZoom = 1.4;
+        let contractClauses = [];
+        let pdfPages = [];
+        let activeClause = null;
+        let editorCollapsed = false;
+        let debugMode = false;
+
+        // Enhanced multi-language contract clauses data
+        const sampleClauses = [
+            {
+                id: 'clause-1',
+                title: 'Governance Compromise',
+                summary: 'Holder must vote according to President instructions',
+                riskLevel: 'high',
+                pageNumber: 5,
+                searchTerms: {
+                    english: ['Governance', 'vote', 'President', 'instructions', 'voting rights', 'compromise', 'Holder agrees']
+                },
+                originalText: 'To give effect to the Governance Compromise, the Holder agrees, upon exercise of its BSPCE leading to the Holder effectively holding the Holder\'s Shares, in all shareholders decisions... to vote in strict accordance with the instructions provided by the President of the Company',
+                suggestedRewrite: 'Consider negotiating for some voting autonomy in specific situations or board representation',
+                riskExplanation: 'This clause significantly limits your control and voting independence as a shareholder.'
+            },
+            {
+                id: 'clause-2',
+                title: 'Non-Compete',
+                summary: 'Non-compete restrictions remain applicable per SHA',
+                riskLevel: 'medium',
+                pageNumber: 17,
+                searchTerms: {
+                    english: ['Non-Compete', 'Non-Solicit', 'SHA', 'freed', 'Board of Directors', 'undertaking']
+                },
+                originalText: 'For the avoidance of doubts, it is reminded that the Holder has been freed of the non-compete undertaking... However, the Non-Sollicit applicable to the Holder pursuant to the SHA shall however remain fully applicable',
+                suggestedRewrite: 'Ensure non-compete restrictions are reasonable in scope and duration',
+                riskExplanation: 'Non-compete restrictions can limit future business opportunities, though non-solicitation is more reasonable.'
+            },
+            {
+                id: 'clause-3',
+                title: 'Drag Along Right',
+                summary: 'Main shareholders can force you to sell your shares',
+                riskLevel: 'high',
+                pageNumber: 12,
+                searchTerms: {
+                    english: ['Drag Along', 'Offeror', 'ninety-five per cent', '95%', 'share capital', 'Promisor', 'Transfer']
+                },
+                originalText: 'should any Third Party... offer to purchase at least ninety-five per cent (95%) of the share capital of the Company... the Holder... shall... Transfer its Securities of the Company',
+                suggestedRewrite: 'Negotiate for higher threshold or fair value determination process',
+                riskExplanation: 'This clause can force you to sell your shares even if you disagree with the terms or valuation.'
+            },
+            {
+                id: 'clause-4',
+                title: 'Tag Along Right',
+                summary: 'You can sell alongside major shareholders in certain sales',
+                riskLevel: 'low',
+                pageNumber: 10,
+                searchTerms: {
+                    english: ['Tag Along', 'Tag-Along Right', 'Beneficiary', 'more than 50%', 'Industrial Investor', 'Transferee']
+                },
+                originalText: 'the Holder... shall have a tag-along right, pursuant to which it shall be entitled to compel the Transferor Shareholder(s) to require the simultaneous acquisition by the contemplated Transferee... of all or part... of its own Securities',
+                suggestedRewrite: 'This clause is generally favorable - provides good liquidity protection',
+                riskExplanation: 'Tag-along rights protect minority shareholders by allowing participation in major sales at the same terms.'
+            },
+            {
+                id: 'clause-5',
+                title: 'Priority Allocation',
+                summary: 'Complex waterfall allocation rules determine exit proceeds',
+                riskLevel: 'medium',
+                pageNumber: 14,
+                searchTerms: {
+                    english: ['Priority Allocation', 'Exit', 'Sale Price', 'waterfall', 'Selling Parties', 'allocation', 'Ordinary Shares']
+                },
+                originalText: 'In case of a sale... the portion of the total Sale price... payable to Parties who are amongst the sellers... shall be allocated amongst the Selling Parties',
+                suggestedRewrite: 'Ensure you understand exactly how the waterfall affects your exit proceeds',
+                riskExplanation: 'Complex allocation rules may significantly reduce your share of exit proceeds compared to pro-rata distribution.'
+            }
+        ];
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing...');
+            
+            const uploadArea = document.getElementById('uploadArea');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const fileInput = document.getElementById('fileInput');
+            
+            // Upload handlers
+            uploadArea.addEventListener('click', () => fileInput.click());
+            uploadBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fileInput.click();
+            });
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) {
+                    processFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    processFile(e.target.files[0]);
+                }
+            });
+            
+            // Button handlers
+            document.getElementById('newContractBtn')?.addEventListener('click', resetInterface);
+            document.getElementById('shareBtn')?.addEventListener('click', shareResults);
+            
+            // Keyboard shortcuts and debugging
+            document.addEventListener('keydown', handleKeyPress);
+        });
+        
+        // Handle keyboard shortcuts
+        function handleKeyPress(e) {
+            // Debug mode toggle (Ctrl+Shift+D)
+            if (e.ctrlKey && e.shiftKey && e.key === 'D') {
+                e.preventDefault();
+                toggleDebugMode();
+            }
+            
+            // Re-highlight clauses (Ctrl+Shift+H)
+            if (e.ctrlKey && e.shiftKey && e.key === 'H') {
+                e.preventDefault();
+                if (contractClauses.length > 0) {
+                    addClauseHighlights();
+                    console.log('Re-highlighted clauses');
+                }
+            }
+            
+            // Navigate between clauses with arrow keys
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                if (activeClause && contractClauses.length > 0) {
+                    e.preventDefault();
+                    const currentIndex = contractClauses.findIndex(c => c.id === activeClause.id);
+                    let newIndex;
+                    
+                    if (e.key === 'ArrowUp') {
+                        newIndex = currentIndex > 0 ? currentIndex - 1 : contractClauses.length - 1;
+                    } else {
+                        newIndex = currentIndex < contractClauses.length - 1 ? currentIndex + 1 : 0;
+                    }
+                    
+                    navigateToClause(contractClauses[newIndex]);
+                }
+            }
+        }
+        
+        // Toggle debug mode
+        function toggleDebugMode() {
+            debugMode = !debugMode;
+            
+            if (debugMode) {
+                console.log('🐛 Debug mode enabled');
+                document.body.classList.add('debug-mode');
+                
+                // Show text layers
+                document.querySelectorAll('.text-layer').forEach(layer => {
+                    layer.classList.add('debug');
+                });
+                
+                // Log PDF info
+                if (currentPDF) {
+                    console.log('📄 Current PDF:', {
+                        numPages: currentPDF.numPages,
+                        zoom: currentZoom,
+                        pdfPages: pdfPages.length,
+                        clauses: contractClauses.length
+                    });
+                    
+                    // Log text content for each page
+                    pdfPages.forEach(pageData => {
+                        const textContent = pageData.textLayer.getAttribute('data-text-content') || '';
+                        console.log(`Page ${pageData.pageNum} text content (${textContent.length} chars):`, 
+                            textContent.substring(0, 200) + (textContent.length > 200 ? '...' : ''));
+                    });
+                }
+                
+                alert('Debug mode enabled! Check console for details.\nPress Ctrl+Shift+D again to disable.');
+            } else {
+                console.log('Debug mode disabled');
+                document.body.classList.remove('debug-mode');
+                
+                // Hide text layers
+                document.querySelectorAll('.text-layer').forEach(layer => {
+                    layer.classList.remove('debug');
+                });
+            }
+        }
+        
+        // Process uploaded file
+        async function processFile(file) {
+            if (!file.type.includes('pdf')) {
+                alert('Please upload a PDF file.');
+                return;
+            }
+            
+            try {
+                showProcessing();
+                console.log('Processing file:', file.name);
+                
+                // Load PDF
+                const pdfDoc = await loadPDF(file);
+                currentPDF = pdfDoc;
+                console.log(`✅ PDF loaded successfully: ${pdfDoc.numPages} pages`);
+                
+                // Update UI
+                document.getElementById('pageCount').textContent = pdfDoc.numPages;
+                document.getElementById('clauseCount').textContent = sampleClauses.length;
+                document.getElementById('pdfTitle').textContent = file.name;
+                
+                // Render PDF with text layers
+                await renderPDFWithTextLayers();
+                
+                // Populate contract clauses
+                populateContractClauses();
+                
+                // Add highlights to PDF with delay to ensure text layers are ready
+                setTimeout(() => {
+                    addClauseHighlights();
+                }, 1500);
+                
+                setTimeout(() => {
+                    hideProcessing();
+                    showMainInterface();
+                }, 2500);
+                
+            } catch (error) {
+                console.error('❌ Error processing file:', error);
+                hideProcessing();
+                alert('Error processing file: ' + error.message);
+            }
+        }
+        
+        // Load PDF document
+        function loadPDF(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async function() {
+                    try {
+                        const pdf = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
+                        resolve(pdf);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = () => reject(new Error('Failed to read file'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+        
+        // Render PDF with selectable text layers
+        async function renderPDFWithTextLayers() {
+            const container = document.getElementById('pdfContainer');
+            container.innerHTML = '';
+            pdfPages = [];
+            
+            if (!currentPDF) return;
+            
+            console.log(`🔄 Rendering ${currentPDF.numPages} pages with text layers...`);
+            
+            for (let pageNum = 1; pageNum <= currentPDF.numPages; pageNum++) {
+                const page = await currentPDF.getPage(pageNum);
+                const viewport = page.getViewport({ scale: currentZoom });
+                
+                // Create page wrapper
+                const pageWrapper = document.createElement('div');
+                pageWrapper.className = 'pdf-page-wrapper';
+                pageWrapper.style.position = 'relative';
+                pageWrapper.style.marginBottom = '2rem';
+                pageWrapper.style.display = 'flex';
+                pageWrapper.style.flexDirection = 'column';
+                pageWrapper.style.alignItems = 'center';
+                
+                // Create page container
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'pdf-page';
+                pageDiv.style.width = viewport.width + 'px';
+                pageDiv.style.height = viewport.height + 'px';
+                pageDiv.setAttribute('data-page', pageNum);
+                pageDiv.id = `page-${pageNum}`;
+                pageDiv.style.position = 'relative';
+                
+                // Render PDF to canvas with higher DPI
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const devicePixelRatio = window.devicePixelRatio || 1;
+                
+                canvas.width = viewport.width * devicePixelRatio;
+                canvas.height = viewport.height * devicePixelRatio;
+                canvas.style.width = viewport.width + 'px';
+                canvas.style.height = viewport.height + 'px';
+                
+                ctx.scale(devicePixelRatio, devicePixelRatio);
+                
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                
+                await page.render(renderContext).promise;
+                pageDiv.appendChild(canvas);
+                
+                // Add selectable text layer with enhanced error handling
+                const textLayer = document.createElement('div');
+                textLayer.className = 'text-layer';
+                textLayer.style.width = viewport.width + 'px';
+                textLayer.style.height = viewport.height + 'px';
+                textLayer.id = `textLayer-${pageNum}`;
+                
+                try {
+                    const textContent = await page.getTextContent();
+                    console.log(`📝 Page ${pageNum}: ${textContent.items.length} text items extracted`);
+                    
+                    if (textContent.items.length === 0) {
+                        console.warn(`⚠️ No text content extracted from page ${pageNum}`);
+                        textLayer.setAttribute('data-text-content', '');
+                    } else {
+                        // Create text divs array to store references
+                        const textDivs = [];
+                        
+                        // Render text layer with proper error handling
+                        await pdfjsLib.renderTextLayer({
+                            textContentSource: textContent,
+                            container: textLayer,
+                            viewport: viewport,
+                            textDivs: textDivs,
+                            enhanceTextSelection: true
+                        }).promise;
+                        
+                        // Store full text content for searching
+                        const fullText = textContent.items
+                            .map(item => item.str || '')
+                            .join(' ')
+                            .replace(/\s+/g, ' ')
+                            .trim();
+                        
+                        textLayer.setAttribute('data-text-content', fullText);
+                        console.log(`✅ Page ${pageNum}: Text layer rendered successfully (${fullText.length} chars)`);
+                        
+                        if (debugMode) {
+                            console.log(`Page ${pageNum} sample text:`, fullText.substring(0, 100));
+                        }
+                    }
+                    
+                } catch (textError) {
+                    console.error(`❌ Text layer rendering failed for page ${pageNum}:`, textError);
+                    textLayer.setAttribute('data-text-content', '');
+                }
+                
+                pageDiv.appendChild(textLayer);
+                
+                // Add page number
+                const pageNumber = document.createElement('div');
+                pageNumber.className = 'page-number';
+                pageNumber.textContent = `Page ${pageNum}`;
+                
+                pageWrapper.appendChild(pageDiv);
+                pageWrapper.appendChild(pageNumber);
+                container.appendChild(pageWrapper);
+                
+                // Store page data
+                pdfPages.push({
+                    pageNum,
+                    pageDiv,
+                    textLayer,
+                    page,
+                    viewport,
+                    pageWrapper,
+                    canvas
+                });
+            }
+            
+            console.log(`✅ Successfully rendered ${pdfPages.length} pages with text layers`);
+            updateZoomDisplay();
+        }
+
+        // Populate contract clauses in left panel
+        function populateContractClauses() {
+            const clausesList = document.getElementById('clausesList');
+            clausesList.innerHTML = '';
+            
+            contractClauses = sampleClauses;
+            
+            contractClauses.forEach((clause, index) => {
+                const clauseElement = document.createElement('div');
+                clauseElement.className = 'clause-item';
+                clauseElement.setAttribute('data-clause-id', clause.id);
+                
+                clauseElement.innerHTML = `
+                    <div class="clause-number ${clause.riskLevel}">
+                        ${index + 1}
+                    </div>
+                    <div class="clause-content">
+                        <div class="clause-title">${clause.title}</div>
+                        <div class="clause-summary">${clause.summary}</div>
+                        <div class="clause-location">
+                            📍 Page ${clause.pageNumber} • Click to navigate
+                        </div>
+                    </div>
+                `;
+                
+                clauseElement.addEventListener('click', () => navigateToClause(clause));
+                clausesList.appendChild(clauseElement);
+            });
+        }
+
+        // Navigate to clause in PDF and show in editor
+        function navigateToClause(clause) {
+            console.log('🧭 Navigating to clause:', clause.title);
+            
+            // Update active clause state
+            activeClause = clause;
+            
+            // Update UI - highlight active clause in list
+            document.querySelectorAll('.clause-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            const clauseElement = document.querySelector(`[data-clause-id="${clause.id}"]`);
+            if (clauseElement) {
+                clauseElement.classList.add('active');
+            }
+            
+            // Navigate to page in PDF
+            navigateToPDFPage(clause.pageNumber);
+            
+            // Highlight the clause in PDF
+            highlightClauseInPDF(clause);
+            
+            // Update editor panel
+            updateEditorPanel(clause);
+            
+            // Show editor panel if collapsed
+            if (editorCollapsed) {
+                toggleEditor();
+            }
+        }
+
+        // Navigate to specific page in PDF
+        function navigateToPDFPage(pageNumber) {
+            const pageElement = document.getElementById(`page-${pageNumber}`);
+            if (pageElement) {
+                const pdfViewer = document.getElementById('pdfViewer');
+                
+                // Calculate scroll position more accurately
+                const viewerRect = pdfViewer.getBoundingClientRect();
+                const pageRect = pageElement.getBoundingClientRect();
+                const currentScrollTop = pdfViewer.scrollTop;
+                
+                // Calculate the target scroll position
+                const targetScrollTop = currentScrollTop + pageRect.top - viewerRect.top - 50; // 50px offset from top
+                
+                console.log(`🎯 Navigating to page ${pageNumber}, scrollTop: ${targetScrollTop}`);
+                
+                pdfViewer.scrollTo({
+                    top: Math.max(0, targetScrollTop),
+                    behavior: 'smooth'
+                });
+                
+                // Add visual feedback
+                pageElement.style.transition = 'box-shadow 0.5s ease';
+                pageElement.style.boxShadow = '0 0 20px rgba(255, 165, 0, 0.4)';
+                
+                setTimeout(() => {
+                    pageElement.style.boxShadow = '';
+                }, 2000);
+            } else {
+                console.warn(`⚠️ Page element not found: page-${pageNumber}`);
+            }
+        }
+
+        // Add clause highlights to PDF with enhanced multi-language search
+        function addClauseHighlights() {
+            console.log('🎨 Adding clause highlights with multi-language support...');
+            
+            // Clear existing highlights first
+            document.querySelectorAll('.clause-highlight').forEach(highlight => {
+                highlight.remove();
+            });
+            
+            contractClauses.forEach(clause => {
+                const pageData = pdfPages.find(page => page.pageNum === clause.pageNumber);
+                if (pageData) {
+                    console.log(`🔍 Searching for clause: "${clause.title}" on page ${clause.pageNumber}`);
+                    searchAndHighlightInPage(clause, pageData);
+                }
+            });
+        }
+
+        // Enhanced search and highlight function with multi-language support
+        function searchAndHighlightInPage(clause, pageData) {
+            const textLayer = pageData.textLayer;
+            const textContent = textLayer.getAttribute('data-text-content') || '';
+            const textSpans = textLayer.querySelectorAll('span');
+            
+            console.log(`🔍 Searching in page ${pageData.pageNum} for clause "${clause.title}"`);
+            console.log(`📄 Page has ${textSpans.length} text spans, ${textContent.length} total characters`);
+            
+            if (debugMode) {
+                console.log(`Page ${pageData.pageNum} text sample:`, textContent.substring(0, 200));
+            }
+            
+            // If no spans or text content, create fallback highlight
+            if (textSpans.length === 0 || textContent.length === 0) {
+                console.warn(`⚠️ No text found in page ${pageData.pageNum}, creating fallback highlight`);
+                createFallbackHighlight(pageData, clause);
+                return;
+            }
+            
+            // Combine all search terms (English and French)
+            const searchTerms = [
+                ...(clause.searchTerms.english || []),
+                ...(clause.searchTerms.french || [])
+            ];
+            
+            console.log(`🔍 Searching for terms:`, searchTerms);
+            
+            let foundMatches = [];
+            let matchingSpans = [];
+            
+            // Search in the full text content first
+            const lowerTextContent = textContent.toLowerCase();
+            let textMatches = 0;
+            
+            searchTerms.forEach(term => {
+                const lowerTerm = term.toLowerCase();
+                if (lowerTextContent.includes(lowerTerm)) {
+                    textMatches++;
+                    foundMatches.push(term);
+                }
+            });
+            
+            console.log(`📊 Found ${textMatches} term matches in full text:`, foundMatches);
+            
+            // Search through individual spans for precise positioning
+            textSpans.forEach(span => {
+                const spanText = (span.textContent || '').toLowerCase().trim();
+                if (spanText.length === 0) return;
+                
+                let spanMatches = false;
+                
+                searchTerms.forEach(term => {
+                    const lowerTerm = term.toLowerCase();
+                    
+                    // Check for exact matches or partial matches
+                    if (spanText.includes(lowerTerm) || 
+                        lowerTerm.includes(spanText) ||
+                        (spanText.length > 3 && lowerTerm.length > 3 && 
+                         (spanText.includes(lowerTerm.substring(0, Math.min(4, lowerTerm.length))) ||
+                          lowerTerm.includes(spanText.substring(0, Math.min(4, spanText.length)))))) {
+                        spanMatches = true;
+                    }
+                });
+                
+                if (spanMatches) {
+                    matchingSpans.push(span);
+                }
+            });
+            
+            console.log(`📍 Found ${matchingSpans.length} matching spans for clause "${clause.title}"`);
+            
+            if (matchingSpans.length === 0) {
+                console.warn(`⚠️ No span matches found for "${clause.title}", creating fallback highlight`);
+                createFallbackHighlight(pageData, clause);
+                return;
+            }
+            
+            // Create highlights for matching spans
+            let highlightsCreated = 0;
+            matchingSpans.forEach((span, index) => {
+                try {
+                    const highlight = createHighlightFromSpan(span, clause, pageData);
+                    if (highlight) {
+                        pageData.pageDiv.appendChild(highlight);
+                        highlightsCreated++;
+                    }
+                } catch (error) {
+                    console.error(`❌ Error creating highlight for span ${index}:`, error);
+                }
+            });
+            
+            // If no highlights were actually created, make a fallback
+            if (highlightsCreated === 0) {
+                console.warn(`⚠️ Failed to create any highlights for "${clause.title}", creating fallback`);
+                createFallbackHighlight(pageData, clause);
+            } else {
+                console.log(`✅ Created ${highlightsCreated} highlights for clause "${clause.title}"`);
+            }
+        }
+
+        // Get risk level colors
+        function getRiskColors(riskLevel) {
+            switch (riskLevel) {
+                case 'high':
+                    return {
+                        background: 'var(--high-risk-highlight)',
+                        border: 'var(--high-risk-border)',
+                        hoverBg: 'rgba(239, 68, 68, 0.4)'
+                    };
+                case 'medium':
+                    return {
+                        background: 'var(--medium-risk-highlight)',
+                        border: 'var(--medium-risk-border)',
+                        hoverBg: 'rgba(249, 115, 22, 0.4)'
+                    };
+                case 'low':
+                    return {
+                        background: 'var(--low-risk-highlight)',
+                        border: 'var(--low-risk-border)',
+                        hoverBg: 'rgba(34, 197, 94, 0.4)'
+                    };
+                default:
+                    return {
+                        background: 'var(--clause-highlight)',
+                        border: 'var(--clause-border)',
+                        hoverBg: 'rgba(255, 165, 0, 0.4)'
+                    };
+            }
+        }
+
+        // Create highlight element from text span
+        function createHighlightFromSpan(span, clause, pageData) {
+            try {
+                const highlight = document.createElement('div');
+                highlight.className = 'clause-highlight';
+                highlight.setAttribute('data-clause-id', clause.id);
+                highlight.setAttribute('title', `${clause.title} - Click to analyze`);
+                
+                // Get risk-based colors
+                const colors = getRiskColors(clause.riskLevel);
+                
+                // Get proper positioning using getBoundingClientRect for accuracy
+                const spanRect = span.getBoundingClientRect();
+                const pageRect = pageData.pageDiv.getBoundingClientRect();
+                
+                // Calculate relative position within the page
+                let left = spanRect.left - pageRect.left;
+                let top = spanRect.top - pageRect.top;
+                let width = spanRect.width || 100;
+                let height = spanRect.height || 16;
+                
+                // Ensure minimum dimensions for visibility
+                width = Math.max(width, 50);
+                height = Math.max(height, 18);
+                
+                // Apply positioning with proper coordinate conversion
+                highlight.style.position = 'absolute';
+                highlight.style.left = Math.max(0, left) + 'px';
+                highlight.style.top = Math.max(0, top) + 'px';
+                highlight.style.width = width + 'px';
+                highlight.style.height = height + 'px';
+                
+                // Apply risk-based styling
+                highlight.style.background = colors.background;
+                highlight.style.borderColor = colors.border;
+                
+                // Add click handler
+                highlight.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log(`🎯 Clicked ${clause.riskLevel} risk highlight for clause: ${clause.title}`);
+                    navigateToClause(clause);
+                });
+                
+                // Add hover effect with risk-based colors
+                highlight.addEventListener('mouseenter', () => {
+                    highlight.style.background = colors.hoverBg;
+                });
+                
+                highlight.addEventListener('mouseleave', () => {
+                    highlight.style.background = colors.background;
+                });
+                
+                return highlight;
+                
+            } catch (error) {
+                console.error('Error creating highlight from span:', error);
+                return null;
+            }
+        }
+        
+        // Create fallback highlight when text search fails
+        function createFallbackHighlight(pageData, clause) {
+            const highlight = document.createElement('div');
+            highlight.className = 'clause-highlight';
+            highlight.setAttribute('data-clause-id', clause.id);
+            highlight.setAttribute('title', `${clause.title} (Approximate location) - Click to analyze`);
+            
+            // Get risk-based colors
+            const colors = getRiskColors(clause.riskLevel);
+            
+            // Create a visible highlight positioned strategically on the page
+            const pageHeight = pageData.viewport.height;
+            const pageWidth = pageData.viewport.width;
+            
+            // Position based on clause index to distribute highlights
+            const clauseIndex = contractClauses.findIndex(c => c.id === clause.id);
+            const totalClauses = contractClauses.length;
+            
+            // Distribute highlights vertically based on clause order
+            const topPercent = 15 + (clauseIndex / totalClauses) * 70; // Between 15% and 85%
+            const leftPercent = 10; // 10% from left
+            
+            highlight.style.left = (pageWidth * leftPercent / 100) + 'px';
+            highlight.style.top = (pageHeight * topPercent / 100) + 'px';
+            highlight.style.width = Math.min(pageWidth * 0.7, 400) + 'px'; // 70% width, max 400px
+            highlight.style.height = '24px';
+            
+            // Add risk-based styling for fallback with dashed border
+            highlight.style.background = colors.background.replace('0.25', '0.35'); // Slightly more opaque
+            highlight.style.border = `2px dashed ${colors.border}`;
+            highlight.style.borderRadius = '6px';
+            
+            // Add a label for fallback highlights
+            const label = document.createElement('div');
+            label.style.position = 'absolute';
+            label.style.top = '-25px';
+            label.style.left = '0px';
+            label.style.background = 'rgba(0, 0, 0, 0.8)';
+            label.style.color = 'white';
+            label.style.padding = '2px 8px';
+            label.style.borderRadius = '4px';
+            label.style.fontSize = '10px';
+            label.style.whiteSpace = 'nowrap';
+            label.textContent = clause.title;
+            highlight.appendChild(label);
+            
+            highlight.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log(`🎯 Clicked fallback highlight for clause: ${clause.title}`);
+                navigateToClause(clause);
+            });
+            
+            pageData.pageDiv.appendChild(highlight);
+            console.log(`🎨 Created fallback highlight for clause: ${clause.title}`);
+        }
+
+        // Highlight specific clause in PDF
+        function highlightClauseInPDF(clause) {
+            // Remove existing active highlights
+            document.querySelectorAll('.clause-highlight').forEach(highlight => {
+                highlight.classList.remove('active');
+            });
+            
+            // Add active class to current clause highlights
+            document.querySelectorAll(`[data-clause-id="${clause.id}"]`).forEach(highlight => {
+                highlight.classList.add('active');
+            });
+        }
+
+        // Update editor panel with clause details
+        function updateEditorPanel(clause) {
+            const editorContent = document.getElementById('editorContent');
+            
+            editorContent.innerHTML = `
+                <div class="editor-section">
+                    <div class="section-title">Risk Assessment</div>
+                    <div class="risk-analysis">
+                        <div class="risk-level ${clause.riskLevel}">
+                            ${clause.riskLevel.toUpperCase()} RISK
+                        </div>
+                        <div class="risk-explanation">
+                            ${clause.riskExplanation}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="editor-section">
+                    <div class="section-title">Original Clause</div>
+                    <div class="original-text">
+                        ${clause.originalText}
+                    </div>
+                </div>
+
+                <div class="editor-section">
+                    <div class="section-title">Suggested Improvement</div>
+                    <div class="suggested-rewrite">
+                        ${clause.suggestedRewrite}
+                    </div>
+                </div>
+
+                <div class="editor-section">
+                    <button class="btn btn-primary" onclick="copyRewrite()">
+                        Copy Suggested Text
+                    </button>
+                </div>
+            `;
+        }
+
+        // Copy suggested rewrite to clipboard
+        function copyRewrite() {
+            if (activeClause && activeClause.suggestedRewrite) {
+                navigator.clipboard.writeText(activeClause.suggestedRewrite).then(() => {
+                    alert('Suggested rewrite copied to clipboard!');
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                });
+            }
+        }
+
+        // Toggle editor panel
+        function toggleEditor() {
+            const mainLayout = document.getElementById('mainLayout');
+            const editorPanel = document.getElementById('editorPanel');
+            
+            editorCollapsed = !editorCollapsed;
+            
+            if (editorCollapsed) {
+                mainLayout.classList.add('editor-collapsed');
+                editorPanel.classList.add('collapsed');
+            } else {
+                mainLayout.classList.remove('editor-collapsed');
+                editorPanel.classList.remove('collapsed');
+            }
+        }
+        
+        // Zoom functions
+        async function zoomIn() {
+            currentZoom = Math.min(2.5, currentZoom + 0.2);
+            if (currentPDF) {
+                await renderPDFWithTextLayers();
+                setTimeout(() => addClauseHighlights(), 500);
+            }
+        }
+        
+        async function zoomOut() {
+            currentZoom = Math.max(0.8, currentZoom - 0.2);
+            if (currentPDF) {
+                await renderPDFWithTextLayers();
+                setTimeout(() => addClauseHighlights(), 500);
+            }
+        }
+        
+        async function fitWidth() {
+            currentZoom = 1.4;
+            if (currentPDF) {
+                await renderPDFWithTextLayers();
+                setTimeout(() => addClauseHighlights(), 500);
+            }
+        }
+        
+        function updateZoomDisplay() {
+            document.getElementById('zoomDisplay').textContent = Math.round(currentZoom * 100) + '%';
+        }
+        
+        // UI functions
+        function showProcessing() {
+            document.getElementById('uploadSection').classList.add('hidden');
+            document.getElementById('processingOverlay').classList.remove('hidden');
+        }
+        
+        function hideProcessing() {
+            document.getElementById('processingOverlay').classList.add('hidden');
+        }
+        
+        function showMainInterface() {
+            document.getElementById('mainLayout').classList.remove('hidden');
+            document.getElementById('newContractBtn').classList.remove('hidden');
+            document.getElementById('shareBtn').classList.remove('hidden');
+        }
+        
+        function resetInterface() {
+            document.getElementById('mainLayout').classList.add('hidden');
+            document.getElementById('uploadSection').classList.remove('hidden');
+            document.getElementById('newContractBtn').classList.add('hidden');
+            document.getElementById('shareBtn').classList.add('hidden');
+            document.getElementById('fileInput').value = '';
+            
+            // Clean up
+            currentPDF = null;
+            contractClauses = [];
+            pdfPages = [];
+            activeClause = null;
+            editorCollapsed = false;
+        }
+        
+        function shareResults() {
+            if (contractClauses.length === 0) {
+                alert('No contract analysis to share. Please upload a contract first.');
+                return;
+            }
+            
+            const summary = contractClauses.map((clause, i) => 
+                `${i+1}. ${clause.title} (${clause.riskLevel.toUpperCase()} RISK)\n   ${clause.summary}\n`
+            ).join('\n');
+            
+            navigator.clipboard.writeText(`Contract Analysis Summary:\n\n${summary}`).then(() => {
+                alert('Contract analysis summary copied to clipboard!');
+            });
+        }
+        
+        console.log('✅ LegalCopilot AI Contract Review Interface loaded successfully');
+    </script>
+</body>
+</html>

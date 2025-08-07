@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LegalCopilot - PDF to HTML Converter</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary-purple: #6366f1;
+            --high-risk: #ef4444;
+            --medium-risk: #f97316; 
+            --low-risk: #22c55e;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-900: #111827;
+            --white: #ffffff;
+        }
+        
+        body { 
+            font-family: 'Inter', sans-serif; 
+            background: var(--gray-50); 
+            line-height: 1.6;
+        }
+        
+        .header {
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-200);
+            padding: 12px 24px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .logo { 
+            width: 32px; height: 32px; background: var(--primary-purple); 
+            border-radius: 6px; display: flex; align-items: center; 
+            justify-content: center; color: white; font-weight: 700; 
+            margin-right: 12px;
+        }
+        
+        .brand { font-size: 1.2rem; font-weight: 700; }
+        
+        .btn {
+            padding: 8px 16px; border-radius: 6px; font-size: 0.875rem; 
+            font-weight: 500; border: 1px solid var(--gray-200); 
+            background: var(--white); cursor: pointer; margin-left: 8px;
+        }
+        .btn-primary { background: var(--primary-purple); color: white; border-color: var(--primary-purple); }
+
+        .container {
+            display: flex;
+            height: calc(100vh - 60px);
+            align-items: stretch;
+        }
+
+        .left-panel {
+            flex: 0 0 20%;
+            background: var(--white);
+            border-right: 1px solid var(--gray-200);
+            overflow-y: auto;
+            padding: 20px;
+        }
+        
+        .left-panel h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--gray-900);
+        }
+
+        .main-panel {
+            flex: 0 0 50%;
+            background: var(--white);
+            overflow-y: auto;
+            padding: 20px 30px;
+            position: relative;
+        }
+
+        .right-panel {
+            flex: 0 0 30%;
+            background: var(--white);
+            border-left: 1px solid var(--gray-200);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .right-panel h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 16px;
+            color: var(--gray-900);
+            padding: 20px 20px 0 20px;
+        }
+
+        .clause-details-section {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0 20px 20px 20px;
+        }
+
+        .chat-section-minimal {
+            padding: 15px 20px;
+            background: var(--gray-50);
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .chat-input-minimal {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--gray-200);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            resize: none;
+            min-height: 36px;
+            font-family: inherit;
+        }
+
+        .chat-input-minimal:focus {
+            outline: none;
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.1);
+        }
+
+        .chat-message {
+            margin-bottom: 12px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            line-height: 1.4;
+        }
+
+        .chat-message.user {
+            background: var(--primary-purple);
+            color: white;
+            margin-left: 20px;
+        }
+
+        .chat-message.assistant {
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            margin-right: 20px;
+        }
+
+        .clause-item {
+            display: flex; 
+            gap: 12px; 
+            padding: 12px; 
+            border-radius: 8px; 
+            cursor: pointer;
+            margin-bottom: 12px; 
+            border: 1px solid var(--gray-200); 
+            background: var(--white);
+            transition: all 0.15s ease;
+        }
+        
+        .clause-item:hover { 
+            background: var(--gray-50); 
+            transform: translateY(-1px); 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .clause-item.active { 
+            background: var(--gray-100); 
+            border-color: var(--primary-purple); 
+        }
+
+        .clause-number {
+            width: 28px; height: 28px; border-radius: 6px; 
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.8rem; font-weight: 700; color: white; flex-shrink: 0;
+        }
+        
+        .clause-number.high { background: var(--high-risk); }
+        .clause-number.medium { background: var(--medium-risk); }
+        .clause-number.low { background: var(--low-risk); }
+
+        .clause-content { flex: 1; }
+        .clause-title { font-size: 0.85rem; font-weight: 600; margin-bottom: 4px; }
+        .clause-summary { font-size: 0.7rem; color: var(--gray-600); margin-bottom: 6px; }
+        .clause-location { font-size: 0.7rem; color: var(--primary-purple); font-weight: 500; }
+
+        .upload-section { 
+            height: calc(100vh - 60px); 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        
+        .upload-area { 
+            background: var(--white); 
+            border: 2px dashed var(--gray-200); 
+            border-radius: 12px;
+            padding: 60px 40px; 
+            text-align: center; 
+            cursor: pointer; 
+            max-width: 500px;
+            width: 100%;
+            transition: all 0.2s ease;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary-purple);
+            background: #fafaff;
+        }
+
+        .upload-icon { font-size: 4rem; margin-bottom: 20px; }
+        .upload-title { font-size: 1.8rem; font-weight: 700; margin-bottom: 10px; color: var(--gray-900); }
+        .upload-subtitle { color: var(--gray-600); margin-bottom: 30px; line-height: 1.5; }
+
+        .hidden { display: none !important; }
+
+        /* HTML Document Styles */
+        .document-content {
+            max-width: 100%;
+            margin: 0;
+            background: var(--white);
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-radius: 8px;
+        }
+
+        /* Page Structure */
+        .page {
+            margin-bottom: 60px;
+            page-break-after: always;
+            min-height: 800px;
+            border-bottom: 2px solid var(--gray-200);
+            padding-bottom: 40px;
+        }
+
+        .page-header {
+            background: var(--gray-100);
+            padding: 8px 16px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            text-align: center;
+        }
+
+        /* Right Panel Styles */
+        .clause-detail {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .clause-detail h4 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: var(--gray-900);
+        }
+
+        .risk-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+
+        .risk-badge.high { background: var(--high-risk); color: white; }
+        .risk-badge.medium { background: var(--medium-risk); color: white; }
+        .risk-badge.low { background: var(--low-risk); color: white; }
+
+        .document-content h1, .document-content h2, .document-content h3 {
+            color: var(--gray-900);
+            margin-top: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .document-content p {
+            margin-bottom: 1rem;
+            text-align: justify;
+        }
+
+        .document-content ol, .document-content ul {
+            margin-bottom: 1rem;
+            padding-left: 2rem;
+        }
+
+        .document-content li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Clause Highlighting */
+        .clause-highlight {
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .clause-highlight:hover {
+            transform: scale(1.01);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .clause-highlight.high {
+            background: rgba(239, 68, 68, 0.2);
+            border-left: 4px solid var(--high-risk);
+        }
+
+        .clause-highlight.medium {
+            background: rgba(249, 115, 22, 0.2);
+            border-left: 4px solid var(--medium-risk);
+        }
+
+        .clause-highlight.low {
+            background: rgba(34, 197, 94, 0.2);
+            border-left: 4px solid var(--low-risk);
+        }
+
+        .clause-highlight.active {
+            animation: pulse 2s ease-in-out;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; transform: scale(1.02); }
+        }
+
+        .clause-label {
+            position: absolute;
+            top: -25px;
+            left: 0;
+            background: var(--gray-900);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            white-space: nowrap;
+            z-index: 10;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .clause-highlight:hover .clause-label {
+            opacity: 1;
+        }
+
+        .progress-bar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--gray-200);
+            z-index: 1000;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--primary-purple);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <header class="header">
+        <div style="display: flex; align-items: center;">
+            <div class="logo">L</div>
+            <div class="brand">LegalCopilot - PDF to HTML</div>
+        </div>
+        <div>
+            <button id="newBtn" class="btn hidden">New Contract</button>
+            <button id="downloadBtn" class="btn btn-primary hidden">Download HTML</button>
+        </div>
+    </header>
+
+    <div class="progress-bar hidden" id="progressBar">
+        <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <div id="uploadSection" class="upload-section">
+        <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📄</div>
+            <div class="upload-title">PDF to HTML Conversion</div>
+            <div class="upload-subtitle">
+                Upload your contract to convert it to interactive HTML<br>
+                Perfect highlighting, searchable text, responsive design
+            </div>
+            <input type="file" id="fileInput" accept=".pdf" style="margin: 20px auto; display: block; padding: 12px; font-size: 16px;">
+            <button class="btn btn-primary" id="processBtn">Process PDF</button>
+        </div>
+    </div>
+
+    <div id="mainLayout" class="container hidden">
+        <div class="left-panel">
+            <h2>Contract Navigation</h2>
+            <div style="font-size: 0.8rem; color: var(--gray-600); margin-bottom: 20px;">
+                Click sections to navigate through the document
+            </div>
+            <div id="clausesList">
+                <!-- Will be populated dynamically -->
+            </div>
+        </div>
+
+        <div class="main-panel" id="documentViewer">
+            <div class="document-content" id="documentContent">
+                <!-- Converted HTML content will appear here -->
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <h3>Clause Details</h3>
+            <div class="clause-details-section" id="clauseDetailsSection">
+                <div id="clauseDetails">
+                    <div style="color: var(--gray-600); font-style: italic; text-align: center; margin-top: 50px;">
+                        Select a clause from the navigation to view detailed analysis
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-section-minimal">
+                <textarea 
+                    id="chatInput" 
+                    class="chat-input-minimal" 
+                    placeholder="💬 Ask about clauses, get legal advice, or request modifications..."
+                    rows="1"
+                ></textarea>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+        
+        let currentPDF = null;
+        let contractClauses = [];
+        let convertedHTML = '';
+        let articleMap = new Map(); // Maps article numbers to their actual locations
+
+        // Contract clauses for the Okomera PDF
+        const predefinedClauses = [
+            {
+                id: 'governance',
+                title: 'Governance Compromise',
+                summary: 'Holder must vote according to President instructions',
+                riskLevel: 'high',
+                article: '2.1',
+                searchTerms: ['Governance Compromise', 'vote in strict accordance', 'instructions provided by the President'],
+                definitionTerms: ['2.1', 'Article 2', 'Governance Compromise'],
+                context: 'This clause requires you to vote your shares according to the President\'s instructions, significantly limiting your voting autonomy.',
+                implications: 'Loss of independent decision-making power in company matters',
+                recommendation: 'Consider negotiating for exceptions on major decisions affecting your interests'
+            },
+            {
+                id: 'noncompete',
+                title: 'Non-Compete & Non-Solicit',
+                summary: 'Non-compete restrictions remain applicable per SHA',
+                riskLevel: 'medium',
+                article: '7.1-7.2',
+                searchTerms: ['avoidance of doubts', 'freed of the non-compete', 'Non-Sollicit applicable'],
+                definitionTerms: ['7.1', '7.2', 'Article 7', 'Non-Compete', 'Non-Solicit'],
+                context: 'Non-compete and non-solicit restrictions from the Shareholders Agreement remain in effect.',
+                implications: 'Continued restrictions on business activities and employee recruitment',
+                recommendation: 'Review SHA terms and consider time limitations or scope restrictions'
+            },
+            {
+                id: 'dragalong',
+                title: 'Drag Along Right',
+                summary: 'Main shareholders can force you to sell your shares',
+                riskLevel: 'high',
+                article: '4.1',
+                searchTerms: ['Drag Along Right', 'ninety-five per cent', 'Offeror'],
+                definitionTerms: ['4.1', 'Article 4', 'Drag Along Right', 'Article 4.1'],
+                context: 'If 95% of shareholders agree to sell, you must sell your shares under the same terms.',
+                implications: 'You can be forced to sell even if you prefer to remain invested',
+                recommendation: 'Ensure fair valuation mechanisms and adequate notice periods'
+            },
+            {
+                id: 'tagalong',
+                title: 'Tag Along Right',
+                summary: 'You can sell alongside major shareholders',
+                riskLevel: 'low',
+                article: '3.6',
+                searchTerms: ['Tag Along Right', 'tag-along right', 'Transferor Shareholder'],
+                definitionTerms: ['3.6', 'Article 3', 'Tag Along Right'],
+                context: 'You have the right to sell your shares alongside other shareholders at the same price.',
+                implications: 'Protection against being left behind in partial sale scenarios',
+                recommendation: 'Favorable clause - ensures equal treatment in sale opportunities'
+            },
+            {
+                id: 'priority',
+                title: 'Priority Allocation',
+                summary: 'Waterfall allocation rules for exit proceeds',
+                riskLevel: 'medium',
+                article: '5.2',
+                searchTerms: ['Priority Allocation', 'Sale Price', 'allocated amongst the Selling Parties'],
+                definitionTerms: ['5.2', 'Article 5', 'Priority Allocation', 'Article 5.2'],
+                context: 'Defines how sale proceeds are distributed among different classes of shareholders.',
+                implications: 'Your payout depends on your position in the waterfall structure',
+                recommendation: 'Understand your position in the distribution hierarchy'
+            }
+        ];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('PDF to HTML Converter initialized');
+            console.log('PDF.js available:', typeof pdfjsLib !== 'undefined');
+            
+            const processBtn = document.getElementById('processBtn');
+            const fileInput = document.getElementById('fileInput');
+            
+            if (!processBtn || !fileInput) {
+                console.error('Required elements not found:', { processBtn, fileInput });
+                return;
+            }
+            
+            // Simple button click handler
+            processBtn.addEventListener('click', () => {
+                console.log('Process button clicked');
+                const file = fileInput.files[0];
+                if (!file) {
+                    alert('Please select a PDF file first');
+                    return;
+                }
+                console.log('Processing file:', file.name);
+                processFile(file);
+            });
+            
+            // Optional: Process on file selection
+            fileInput.addEventListener('change', (e) => {
+                console.log('File selected:', e.target.files.length);
+                if (e.target.files.length > 0) {
+                    console.log('File:', e.target.files[0].name);
+                }
+            });
+            
+            document.getElementById('newBtn').addEventListener('click', resetInterface);
+            document.getElementById('downloadBtn').addEventListener('click', downloadHTML);
+            
+            // Chat functionality
+            const chatInput = document.getElementById('chatInput');
+            if (chatInput) {
+                chatInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        sendChatMessage();
+                    }
+                });
+            }
+        });
+
+        // Process PDF file and convert to HTML
+        async function processFile(file) {
+            console.log('🚀 processFile called with:', file.name, file.type, 'Size:', Math.round(file.size / 1024) + 'KB');
+            
+            if (!file.type.includes('pdf')) {
+                console.error('❌ Invalid file type:', file.type);
+                alert('Please upload a PDF file.');
+                return;
+            }
+            
+            if (typeof pdfjsLib === 'undefined') {
+                console.error('❌ PDF.js not loaded');
+                alert('PDF.js library not loaded. Please refresh the page.');
+                return;
+            }
+            
+            try {
+                showProgress(0);
+                console.log('📊 Starting PDF to HTML conversion:', file.name);
+                
+                // Clear previous article mapping
+                articleMap.clear();
+                console.log('🗺️ Article map cleared');
+                
+                console.log('📚 Loading PDF document...');
+                const pdfDoc = await loadPDF(file);
+                currentPDF = pdfDoc;
+                
+                showProgress(25);
+                console.log(`📄 PDF loaded successfully: ${pdfDoc.numPages} pages`);
+                
+                // Extract all text from PDF
+                console.log('🔄 Converting PDF to HTML...');
+                const htmlContent = await convertPDFToHTML(pdfDoc);
+                convertedHTML = htmlContent;
+                
+                showProgress(75);
+                console.log('📝 HTML conversion complete, length:', htmlContent.length);
+                
+                // Display the HTML content
+                console.log('🎨 Displaying HTML content...');
+                displayHTMLContent(htmlContent);
+                
+                // Create clause navigation
+                console.log('🧭 Creating clause navigation...');
+                createClauseNavigation(htmlContent);
+                
+                showProgress(100);
+                console.log('🎯 Article map contents:', Array.from(articleMap.keys()));
+                
+                // Show the interface
+                setTimeout(() => {
+                    hideProgress();
+                    showMainInterface();
+                    console.log('✅ Interface shown - conversion complete!');
+                }, 500);
+                
+                console.log('🎉 PDF successfully converted to HTML');
+            } catch (error) {
+                console.error('💥 Error converting PDF:', error);
+                console.error('Error stack:', error.stack);
+                hideProgress();
+                alert('Error converting PDF: ' + error.message + '\nCheck console for details.');
+            }
+        }
+
+        // Load PDF document
+        function loadPDF(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async function() {
+                    try {
+                        const pdf = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
+                        resolve(pdf);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = () => reject(new Error('Failed to read file'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+
+        // Convert PDF to HTML with proper formatting
+        async function convertPDFToHTML(pdfDoc) {
+            let htmlContent = '';
+            // TEMPORARY: Process only first 5 pages to avoid crashes
+            const maxPages = Math.min(5, pdfDoc.numPages);
+            console.log(`📖 Converting first ${maxPages} pages of ${pdfDoc.numPages} total pages...`);
+            
+            for (let pageNum = 1; pageNum <= maxPages; pageNum++) {
+                try {
+                    showProgress(25 + (pageNum / maxPages) * 50);
+                    console.log(`📑 Processing page ${pageNum}/${pdfDoc.numPages}...`);
+                    
+                    const page = await pdfDoc.getPage(pageNum);
+                    const textContent = await page.getTextContent();
+                    
+                    console.log(`📝 Page ${pageNum}: ${textContent.items.length} text items`);
+                    
+                    // Convert text content to HTML with structure
+                    const pageHTML = convertTextContentToHTML(textContent, pageNum);
+                    htmlContent += pageHTML;
+                    
+                    // Add small delay to prevent browser freeze
+                    if (pageNum % 5 === 0) {
+                        await new Promise(resolve => setTimeout(resolve, 10));
+                    }
+                } catch (error) {
+                    console.error(`💥 Error processing page ${pageNum}:`, error);
+                    htmlContent += `<div class="page" data-page="${pageNum}">
+                        <div class="page-header">Page ${pageNum}</div>
+                        <p style="color: red;">Error processing this page: ${error.message}</p>
+                    </div>`;
+                }
+            }
+            
+            console.log('🏗️ Formatting final HTML document...');
+            return formatHTMLDocument(htmlContent);
+        }
+
+        // Convert text content to structured HTML
+        function convertTextContentToHTML(textContent, pageNum) {
+            if (!textContent.items || textContent.items.length === 0) {
+                return `<div class="page" data-page="${pageNum}">
+                    <div class="page-header">Page ${pageNum}</div>
+                    <p><em>No content on this page</em></p>
+                </div>`;
+            }
+            
+            let html = `<div class="page" data-page="${pageNum}">
+                <div class="page-header">Page ${pageNum}</div>`;
+            let currentParagraph = '';
+            let lastY = null;
+            
+            textContent.items.forEach((item, index) => {
+                const text = item.str || '';
+                if (!text.trim()) return;
+                
+                const y = item.transform[5]; // Y coordinate
+                const fontSize = Math.abs(item.transform[0]); // Font size
+                
+                // Detect article headers and map their locations
+                detectAndMapArticles(text, pageNum, html.length);
+                
+                // Detect new paragraphs based on Y coordinate changes
+                if (lastY !== null && Math.abs(y - lastY) > fontSize * 1.5) {
+                    if (currentParagraph.trim()) {
+                        html += `<p>${currentParagraph.trim()}</p>\n`;
+                        currentParagraph = '';
+                    }
+                }
+                
+                // Add text with potential highlighting
+                currentParagraph += processTextForHighlighting(text) + ' ';
+                lastY = y;
+            });
+            
+            // Add final paragraph
+            if (currentParagraph.trim()) {
+                html += `<p>${currentParagraph.trim()}</p>\n`;
+            }
+            
+            html += '</div>\n\n';
+            return html;
+        }
+
+        // Detect and map article locations
+        function detectAndMapArticles(text, pageNum, htmlPosition) {
+            try {
+                // Look for article patterns: "Article 2.1", "2.1", "4.1", etc.
+                const articlePatterns = [
+                    /Article\s+(\d+(?:\.\d+)*)/gi,
+                    /^(\d+(?:\.\d+)+)\s*[\.:]?\s*[A-Z]/,  // "4.1 DRAG ALONG"
+                    /^(\d+(?:\.\d+)+)\s*$/ // Just "4.1"
+                ];
+                
+                articlePatterns.forEach(pattern => {
+                    try {
+                        let match;
+                        while ((match = pattern.exec(text)) !== null) {
+                            const articleNumber = match[1];
+                            if (!articleMap.has(articleNumber)) {
+                                articleMap.set(articleNumber, {
+                                    page: pageNum,
+                                    text: text.trim(),
+                                    position: htmlPosition
+                                });
+                                console.log(`📍 Found Article ${articleNumber} on page ${pageNum}: ${text.trim().substring(0, 50)}...`);
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Error in article pattern matching:', e);
+                    }
+                });
+            } catch (e) {
+                console.error('Error in detectAndMapArticles:', e);
+            }
+        }
+
+        // Process text and add semantic clause highlighting
+        function processTextForHighlighting(text) {
+            try {
+                let processedText = text;
+                
+                predefinedClauses.forEach(clause => {
+                    try {
+                        // Enhanced semantic highlighting patterns
+                        const semanticPatterns = getSemanticPatterns(clause);
+                        
+                        semanticPatterns.forEach(pattern => {
+                            try {
+                                const regex = new RegExp(`(${pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+                                processedText = processedText.replace(regex, 
+                                    `<span class="clause-highlight ${clause.riskLevel}" data-clause-id="${clause.id}">
+                                        <span class="clause-label">Art. ${clause.article}: ${clause.title}</span>
+                                        $1
+                                    </span>`
+                                );
+                            } catch (e) {
+                                console.error('Error in pattern highlighting:', pattern, e);
+                            }
+                        });
+                    } catch (e) {
+                        console.error('Error processing clause:', clause.id, e);
+                    }
+                });
+                
+                return processedText;
+            } catch (e) {
+                console.error('Error in processTextForHighlighting:', e);
+                return text; // Return original text if processing fails
+            }
+        }
+
+        // Get semantic highlighting patterns for each clause type
+        function getSemanticPatterns(clause) {
+            const patterns = [];
+            
+            switch (clause.id) {
+                case 'governance':
+                    patterns.push(
+                        'vote in strict accordance with',
+                        'instructions provided by the President',
+                        'Governance Compromise'
+                    );
+                    break;
+                    
+                case 'dragalong':
+                    patterns.push(
+                        'ninety-five per cent',
+                        'Drag Along Right',
+                        'offer to purchase at least',
+                        'Offeror may require'
+                    );
+                    break;
+                    
+                case 'tagalong':
+                    patterns.push(
+                        'Tag Along Right',
+                        'tag-along right',
+                        'Transferor Shareholder'
+                    );
+                    break;
+                    
+                case 'priority':
+                    patterns.push(
+                        'Priority Allocation',
+                        'Sale Price',
+                        'allocated amongst the Selling Parties'
+                    );
+                    break;
+                    
+                case 'noncompete':
+                    patterns.push(
+                        'Non-Compete',
+                        'Non-Solicit',
+                        'avoidance of doubts',
+                        'freed of the non-compete'
+                    );
+                    break;
+                    
+                default:
+                    // Fallback to original search terms
+                    return clause.searchTerms || [];
+            }
+            
+            return patterns;
+        }
+
+        // Format the complete HTML document
+        function formatHTMLDocument(content) {
+            return `
+                <div class="contract-header">
+                    <h1>Contract Analysis</h1>
+                    <p><em>Converted from PDF with interactive clause highlighting</em></p>
+                </div>
+                
+                ${content}
+                
+                <div class="contract-footer">
+                    <hr style="margin: 2rem 0; border: none; border-top: 1px solid var(--gray-200);">
+                    <p style="text-align: center; color: var(--gray-600); font-size: 0.875rem;">
+                        Document converted by LegalCopilot PDF to HTML Converter
+                    </p>
+                </div>
+            `;
+        }
+
+        // Display the HTML content
+        function displayHTMLContent(htmlContent) {
+            const documentContent = document.getElementById('documentContent');
+            documentContent.innerHTML = htmlContent;
+            
+            // Add click handlers to highlights
+            document.querySelectorAll('.clause-highlight').forEach(highlight => {
+                highlight.addEventListener('click', (e) => {
+                    const clauseId = e.target.closest('.clause-highlight').dataset.clauseId;
+                    const clause = predefinedClauses.find(c => c.id === clauseId);
+                    if (clause) {
+                        selectClause(clause);
+                    }
+                });
+            });
+        }
+
+        // Create clause navigation
+        function createClauseNavigation(htmlContent) {
+            const clausesList = document.getElementById('clausesList');
+            clausesList.innerHTML = '';
+            
+            predefinedClauses.forEach((clause, index) => {
+                const clauseElement = document.createElement('div');
+                clauseElement.className = 'clause-item';
+                clauseElement.setAttribute('data-clause-id', clause.id);
+                
+                clauseElement.innerHTML = `
+                    <div class="clause-number ${clause.riskLevel}">
+                        ${index + 1}
+                    </div>
+                    <div class="clause-content">
+                        <div class="clause-title">${clause.title}</div>
+                        <div class="clause-summary">${clause.summary}</div>
+                        <div class="clause-location">
+                            📍 Article ${clause.article} • ${clause.riskLevel.toUpperCase()}
+                        </div>
+                    </div>
+                `;
+                
+                clauseElement.addEventListener('click', () => selectClause(clause));
+                clausesList.appendChild(clauseElement);
+            });
+        }
+
+        // Select and navigate to clause
+        function selectClause(clause) {
+            console.log('🎯 Navigating to clause:', clause.title, 'Article:', clause.article);
+            
+            // Update active states
+            document.querySelectorAll('.clause-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-clause-id="${clause.id}"]`).classList.add('active');
+            
+            // Update right panel with clause details
+            updateClauseDetails(clause);
+            
+            // Smart navigation: Find actual article location
+            const articleNumber = clause.article.split('-')[0]; // Get "4.1" from "4.1" or "7.1-7.2"
+            let targetElement = null;
+            
+            // 1. Try to find the actual article definition using our article map
+            if (articleMap.has(articleNumber)) {
+                const articleInfo = articleMap.get(articleNumber);
+                console.log(`📍 Found article ${articleNumber} mapped to page ${articleInfo.page}`);
+                
+                // Find the page element and look for the article
+                const pageElement = document.querySelector(`[data-page="${articleInfo.page}"]`);
+                if (pageElement) {
+                    // Look for text containing the article number in this page
+                    const articleElements = pageElement.querySelectorAll('p, h1, h2, h3, h4, h5, h6');
+                    for (let element of articleElements) {
+                        if (element.textContent.includes(articleNumber) && 
+                            (element.textContent.toLowerCase().includes('drag along') ||
+                             element.textContent.toLowerCase().includes('tag along') ||
+                             element.textContent.toLowerCase().includes('priority') ||
+                             element.textContent.toLowerCase().includes('governance') ||
+                             element.textContent.toLowerCase().includes('non-compete'))) {
+                            targetElement = element;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            // 2. Fallback: Look for highlights but prioritize those in article sections
+            if (!targetElement) {
+                const allHighlights = document.querySelectorAll(`.clause-highlight[data-clause-id="${clause.id}"]`);
+                
+                // Look for highlights that are likely in article definitions (not summary/TOC)
+                for (let highlight of allHighlights) {
+                    const parentPage = highlight.closest('.page');
+                    const pageNum = parentPage ? parseInt(parentPage.dataset.page) : 0;
+                    
+                    // Skip early pages (likely TOC/summary)
+                    if (pageNum > 5) {
+                        targetElement = highlight;
+                        break;
+                    }
+                }
+                
+                // If still no good target, use first highlight
+                if (!targetElement && allHighlights.length > 0) {
+                    targetElement = allHighlights[0];
+                }
+            }
+            
+            if (targetElement) {
+                // Smooth scroll to the target
+                targetElement.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'center' 
+                });
+                
+                // Animate the target
+                targetElement.classList.add('active');
+                setTimeout(() => {
+                    targetElement.classList.remove('active');
+                }, 2000);
+                
+                const pageNum = targetElement.closest('.page')?.dataset.page || 'unknown';
+                console.log(`✅ Smart navigation to ${clause.title} - Article ${articleNumber} on page ${pageNum}`);
+            } else {
+                console.warn(`⚠️ Could not find target for clause: ${clause.title}`);
+            }
+        }
+
+        // Update right panel with clause details
+        function updateClauseDetails(clause) {
+            const clauseDetails = document.getElementById('clauseDetails');
+            clauseDetails.innerHTML = `
+                <div class="clause-detail">
+                    <h4>${clause.title}</h4>
+                    <div class="risk-badge ${clause.riskLevel}">${clause.riskLevel} risk</div>
+                    
+                    <div style="margin-bottom: 16px;">
+                        <strong>Article Reference:</strong> ${clause.article}
+                    </div>
+                    
+                    <div style="margin-bottom: 16px;">
+                        <strong>Summary:</strong><br>
+                        ${clause.summary}
+                    </div>
+                    
+                    <div style="margin-bottom: 16px;">
+                        <strong>Context:</strong><br>
+                        ${clause.context}
+                    </div>
+                    
+                    <div style="margin-bottom: 16px;">
+                        <strong>Implications:</strong><br>
+                        <span style="color: var(--high-risk);">${clause.implications}</span>
+                    </div>
+                    
+                    <div>
+                        <strong>Recommendation:</strong><br>
+                        <span style="color: var(--gray-700);">${clause.recommendation}</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Download HTML version
+        function downloadHTML() {
+            if (!convertedHTML) {
+                alert('No HTML content to download');
+                return;
+            }
+            
+            const fullHTML = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contract Analysis - Converted by LegalCopilot</title>
+    <style>
+        body { font-family: 'Arial', sans-serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 40px; }
+        h1, h2, h3 { color: #1f2937; margin-top: 2rem; margin-bottom: 1rem; }
+        p { margin-bottom: 1rem; text-align: justify; }
+        .clause-highlight { background: rgba(99, 102, 241, 0.1); padding: 2px 4px; border-radius: 2px; }
+        .clause-highlight.high { background: rgba(239, 68, 68, 0.2); }
+        .clause-highlight.medium { background: rgba(249, 115, 22, 0.2); }
+        .clause-highlight.low { background: rgba(34, 197, 94, 0.2); }
+        .contract-header { text-align: center; margin-bottom: 3rem; border-bottom: 2px solid #e5e7eb; padding-bottom: 2rem; }
+    </style>
+</head>
+<body>
+    ${convertedHTML}
+</body>
+</html>`;
+            
+            const blob = new Blob([fullHTML], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `contract-analysis-${new Date().toISOString().split('T')[0]}.html`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log('✅ HTML document downloaded');
+        }
+
+        // Progress functions
+        function showProgress(percent) {
+            const progressBar = document.getElementById('progressBar');
+            const progressFill = document.getElementById('progressFill');
+            progressBar.classList.remove('hidden');
+            progressFill.style.width = percent + '%';
+        }
+
+        function hideProgress() {
+            document.getElementById('progressBar').classList.add('hidden');
+        }
+
+        // UI functions
+        function showMainInterface() {
+            document.getElementById('uploadSection').classList.add('hidden');
+            document.getElementById('mainLayout').classList.remove('hidden');
+            document.getElementById('newBtn').classList.remove('hidden');
+            document.getElementById('downloadBtn').classList.remove('hidden');
+        }
+        
+        function resetInterface() {
+            document.getElementById('mainLayout').classList.add('hidden');
+            document.getElementById('uploadSection').classList.remove('hidden');
+            document.getElementById('newBtn').classList.add('hidden');
+            document.getElementById('downloadBtn').classList.add('hidden');
+            document.getElementById('fileInput').value = '';
+            
+            currentPDF = null;
+            convertedHTML = '';
+        }
+
+        // Chat functionality
+        function sendChatMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const message = chatInput.value.trim();
+            
+            if (!message) return;
+            
+            // Clear input
+            chatInput.value = '';
+            
+            // Simple placeholder response
+            console.log('Chat message:', message);
+            alert(`Chat feature coming in Phase 2! You asked: "${message}"`);
+        }
+
+        console.log('✅ PDF to HTML Converter System loaded');
+        console.log('🎯 Phase 1 Complete: Enhanced layout with chat interface');
+    </script>
+</body>
+</html>

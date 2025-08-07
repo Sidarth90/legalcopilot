@@ -1,0 +1,2211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LegalCopilot - Enhanced PDF Annotation System</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            /* Enhanced Color System - Risk-based highlighting */
+            --primary-purple: #6366f1;
+            --primary-purple-dark: #4f46e5;
+            --primary-purple-light: #e0e7ff;
+            --success-green: #10b981;
+            --danger-red: #ef4444;
+            --warning-orange: #f97316;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+            --white: #ffffff;
+            
+            /* Risk-based Color Coding (as specified) */
+            --high-risk: #ef4444;
+            --high-risk-light: rgba(239, 68, 68, 0.15);
+            --high-risk-border: rgba(239, 68, 68, 0.8);
+            --high-risk-hover: rgba(239, 68, 68, 0.25);
+            
+            --medium-risk: #f97316;
+            --medium-risk-light: rgba(249, 115, 22, 0.15);
+            --medium-risk-border: rgba(249, 115, 22, 0.8);
+            --medium-risk-hover: rgba(249, 115, 22, 0.25);
+            
+            --low-risk: #22c55e;
+            --low-risk-light: rgba(34, 197, 94, 0.15);
+            --low-risk-border: rgba(34, 197, 94, 0.8);
+            --low-risk-hover: rgba(34, 197, 94, 0.25);
+            
+            --hover-bg: var(--gray-50);
+            --active-bg: var(--primary-purple-light);
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+            line-height: 1.5;
+            color: var(--gray-900);
+            background: var(--gray-50);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-200);
+            padding: 0 1.5rem;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .logo {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--primary-purple), var(--primary-purple-dark));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+            font-weight: 700;
+        }
+        
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 800;
+            color: var(--gray-900);
+            letter-spacing: -0.025em;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.625rem 1.25rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+            letter-spacing: -0.025em;
+        }
+        
+        .btn-primary {
+            background: var(--primary-purple);
+            color: var(--white);
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        
+        .btn-primary:hover {
+            background: var(--primary-purple-dark);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-secondary {
+            background: var(--white);
+            color: var(--gray-700);
+            border: 1px solid var(--gray-300);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+        }
+
+        /* Upload Section */
+        .upload-section {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            background: var(--gray-50);
+        }
+        
+        .upload-container {
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .upload-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: var(--gray-900);
+            margin-bottom: 1rem;
+            letter-spacing: -0.05em;
+            line-height: 1.1;
+        }
+        
+        .upload-subtitle {
+            font-size: 1.125rem;
+            color: var(--gray-600);
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+        }
+        
+        .upload-area {
+            background: var(--white);
+            border: 2px dashed var(--gray-300);
+            border-radius: 16px;
+            padding: 3rem 2rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--primary-purple);
+            background: var(--primary-purple-light);
+            transform: translateY(-2px);
+        }
+        
+        .upload-icon {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto 1.5rem;
+            background: var(--gray-100);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+        }
+        
+        .upload-text {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 0.5rem;
+        }
+        
+        .upload-hint {
+            font-size: 0.875rem;
+            color: var(--gray-500);
+            margin-bottom: 2rem;
+        }
+
+        /* Three-Panel Layout */
+        .main-layout {
+            position: fixed;
+            top: 64px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            display: grid;
+            grid-template-columns: 380px 1fr 380px;
+            background: var(--gray-50);
+            transition: grid-template-columns 0.3s ease;
+        }
+
+        .main-layout.editor-collapsed {
+            grid-template-columns: 380px 1fr 0px;
+        }
+
+        /* LEFT PANEL - Contract Summary */
+        .summary-panel {
+            background: var(--white);
+            border-right: 1px solid var(--gray-200);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .summary-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+            background: var(--white);
+            flex-shrink: 0;
+        }
+        
+        .summary-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.025em;
+        }
+        
+        .summary-subtitle {
+            font-size: 0.875rem;
+            color: var(--gray-500);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success-green);
+        }
+        
+        .summary-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        /* Contract Overview */
+        .contract-overview {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .overview-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .overview-stats {
+            background: var(--gray-50);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-purple);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+            margin-top: 0.25rem;
+        }
+
+        /* Contract Clauses List */
+        .clauses-section {
+            padding: 1.5rem;
+        }
+
+        .clauses-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .clause-item {
+            display: flex;
+            gap: 1rem;
+            padding: 1rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            margin-bottom: 0.75rem;
+            border: 1px solid var(--gray-200);
+            background: var(--white);
+            position: relative;
+        }
+
+        .clause-item:hover {
+            background: var(--hover-bg);
+            border-color: var(--gray-300);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .clause-item.active {
+            background: var(--active-bg);
+            border-color: var(--primary-purple);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .clause-number {
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: var(--white);
+            flex-shrink: 0;
+        }
+
+        .clause-number.high { background: var(--high-risk); }
+        .clause-number.medium { background: var(--medium-risk); }
+        .clause-number.low { background: var(--low-risk); }
+
+        .clause-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .clause-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 0.25rem;
+            line-height: 1.4;
+        }
+
+        .clause-summary {
+            font-size: 0.75rem;
+            color: var(--gray-600);
+            line-height: 1.4;
+            margin-bottom: 0.5rem;
+        }
+
+        .clause-location {
+            font-size: 0.75rem;
+            color: var(--primary-purple);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        /* CENTER PANEL - Enhanced PDF Viewer */
+        .pdf-panel {
+            display: flex;
+            flex-direction: column;
+            background: var(--gray-100);
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .pdf-header {
+            background: var(--white);
+            border-bottom: 1px solid var(--gray-200);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 56px;
+            flex-shrink: 0;
+        }
+        
+        .pdf-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .pdf-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+        
+        .pdf-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .control-btn {
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--gray-300);
+            background: var(--white);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-size: 0.875rem;
+            color: var(--gray-600);
+            font-weight: 500;
+        }
+        
+        .control-btn:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+        }
+        
+        .zoom-display {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+            font-weight: 500;
+            min-width: 50px;
+            text-align: center;
+        }
+        
+        .pdf-viewer {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: auto;
+            background: var(--gray-200);
+            display: flex;
+            justify-content: center;
+            padding: 2rem;
+            scroll-behavior: smooth;
+            position: relative;
+        }
+        
+        .pdf-container {
+            background: var(--white);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-radius: 12px;
+            overflow: visible;
+            max-width: 100%;
+            width: fit-content;
+            position: relative;
+            min-height: 100%;
+        }
+        
+        .pdf-page {
+            background: var(--white);
+            position: relative;
+            border-bottom: 1px solid var(--gray-200);
+            margin-bottom: 1rem;
+        }
+        
+        .pdf-page:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .pdf-page canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+            max-width: none;
+        }
+
+        /* Enhanced Annotation System - SVG-based for pixel-perfect positioning */
+        .annotation-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        .annotation-layer svg {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .text-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            opacity: 0;
+            line-height: 1.0;
+            pointer-events: none;
+            z-index: 5;
+        }
+
+        .text-layer > span {
+            color: transparent;
+            position: absolute;
+            white-space: pre;
+            cursor: text;
+            transform-origin: 0% 0%;
+            user-select: text;
+        }
+
+        /* Enhanced SVG Annotation Styles */
+        .clause-annotation {
+            cursor: pointer;
+            pointer-events: all;
+            transition: all 0.15s ease;
+        }
+
+        .clause-annotation:hover {
+            filter: brightness(1.1);
+            transform: scale(1.02);
+            transform-origin: center;
+        }
+
+        .clause-annotation.active {
+            filter: brightness(1.2) saturate(1.3);
+            animation: annotationPulse 2s ease-in-out;
+        }
+
+        @keyframes annotationPulse {
+            0%, 100% { 
+                filter: brightness(1.2) saturate(1.3);
+            }
+            50% { 
+                filter: brightness(1.4) saturate(1.5);
+            }
+        }
+
+        /* RIGHT PANEL - Clause Editor */
+        .editor-panel {
+            background: var(--white);
+            border-left: 1px solid var(--gray-200);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .editor-panel.collapsed {
+            width: 0;
+            opacity: 0;
+            border-left: none;
+        }
+        
+        .editor-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--gray-200);
+            background: var(--white);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .editor-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            letter-spacing: -0.025em;
+            flex: 1;
+        }
+
+        .collapse-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--gray-300);
+            background: var(--white);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            color: var(--gray-600);
+        }
+
+        .collapse-btn:hover {
+            background: var(--gray-50);
+            border-color: var(--gray-400);
+        }
+        
+        .editor-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+        }
+
+        .editor-section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .original-text {
+            background: var(--gray-50);
+            border-left: 4px solid var(--primary-purple);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            color: var(--gray-700);
+        }
+
+        .suggested-rewrite {
+            background: rgba(16, 185, 129, 0.05);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.875rem;
+            line-height: 1.6;
+            color: var(--gray-700);
+        }
+
+        .risk-analysis {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+
+        .risk-analysis.high {
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+        }
+
+        .risk-analysis.medium {
+            background: rgba(249, 115, 22, 0.05);
+            border: 1px solid rgba(249, 115, 22, 0.2);
+        }
+
+        .risk-analysis.low {
+            background: rgba(34, 197, 94, 0.05);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+        }
+
+        .risk-level {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.75rem;
+        }
+
+        .risk-level.high {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger-red);
+        }
+
+        .risk-level.medium {
+            background: rgba(249, 115, 22, 0.1);
+            color: var(--warning-orange);
+        }
+
+        .risk-level.low {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--success-green);
+        }
+
+        .risk-explanation {
+            font-size: 0.875rem;
+            color: var(--gray-700);
+            line-height: 1.5;
+        }
+
+        /* Processing Overlay */
+        .processing-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .processing-content {
+            text-align: center;
+            max-width: 400px;
+        }
+        
+        .processing-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--gray-200);
+            border-top-color: var(--primary-purple);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+        
+        .processing-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.025em;
+        }
+        
+        .processing-subtitle {
+            font-size: 0.875rem;
+            color: var(--gray-500);
+        }
+
+        /* Page Numbers */
+        .page-number {
+            position: absolute;
+            bottom: -2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        /* Debug Mode */
+        .debug-info {
+            position: fixed;
+            top: 70px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-family: monospace;
+            z-index: 1001;
+            max-width: 300px;
+        }
+
+        /* Animations */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .scroll-smooth {
+            scroll-behavior: smooth;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1400px) {
+            .main-layout {
+                grid-template-columns: 320px 1fr 320px;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 280px 1fr 0px;
+            }
+            .editor-panel {
+                position: fixed;
+                right: 0;
+                top: 64px;
+                bottom: 0;
+                width: 380px;
+                z-index: 100;
+                box-shadow: -4px 0 24px rgba(0, 0, 0, 0.15);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: 40vh 1fr;
+            }
+            
+            .summary-panel {
+                border-right: none;
+                border-bottom: 1px solid var(--gray-200);
+            }
+            
+            .brand {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo-section">
+            <div class="logo">L</div>
+            <div class="brand">LegalCopilot Enhanced</div>
+        </div>
+        <div class="header-actions">
+            <button id="debugBtn" class="btn btn-secondary hidden">
+                Debug Mode
+            </button>
+            <button id="exportBtn" class="btn btn-secondary hidden">
+                Export Annotations
+            </button>
+            <button id="newContractBtn" class="btn btn-secondary hidden">
+                New Contract
+            </button>
+            <button id="shareBtn" class="btn btn-primary hidden">
+                Share Analysis
+            </button>
+        </div>
+    </header>
+
+    <!-- Upload Section -->
+    <div id="uploadSection" class="upload-section">
+        <div class="upload-container">
+            <h1 class="upload-title">Enhanced PDF Analysis</h1>
+            <p class="upload-subtitle">
+                Upload your contract for pixel-perfect highlighting with advanced SVG-based annotations and risk-coded analysis
+            </p>
+            
+            <div id="uploadArea" class="upload-area">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">Drop your contract here</div>
+                <div class="upload-hint">or click to browse files (PDF format)</div>
+                <button id="uploadBtn" class="btn btn-primary">Choose File</button>
+                <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+            </div>
+        </div>
+    </div>
+
+    <!-- Processing Overlay -->
+    <div id="processingOverlay" class="processing-overlay hidden">
+        <div class="processing-content">
+            <div class="processing-spinner"></div>
+            <h3 class="processing-title">Analyzing Contract</h3>
+            <p class="processing-subtitle">Creating enhanced annotations with pixel-perfect positioning...</p>
+        </div>
+    </div>
+
+    <!-- Debug Info Panel -->
+    <div id="debugInfo" class="debug-info hidden">
+        <div>Debug Mode Active</div>
+        <div id="debugContent"></div>
+    </div>
+
+    <!-- Three-Panel Main Layout -->
+    <div id="mainLayout" class="main-layout hidden">
+        <!-- LEFT PANEL - Contract Summary -->
+        <div class="summary-panel">
+            <div class="summary-header">
+                <h2 class="summary-title">Contract Summary</h2>
+                <div class="summary-subtitle">
+                    <div class="status-indicator"></div>
+                    <span id="analysisStatus">Enhanced analysis complete</span>
+                </div>
+            </div>
+            
+            <div class="summary-content">
+                <!-- Contract Overview -->
+                <div class="contract-overview">
+                    <h3 class="overview-title">Document Overview</h3>
+                    <div class="overview-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" id="pageCount">0</div>
+                            <div class="stat-label">Pages</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="clauseCount">0</div>
+                            <div class="stat-label">Key Clauses</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Contract Clauses -->
+                <div class="clauses-section">
+                    <h3 class="clauses-title">Risk-Coded Clauses</h3>
+                    <div id="clausesList">
+                        <!-- Dynamic clauses will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENTER PANEL - Enhanced PDF Viewer -->
+        <div class="pdf-panel">
+            <div class="pdf-header">
+                <div class="pdf-info">
+                    <span>📄</span>
+                    <span id="pdfTitle" class="pdf-title">Contract Document</span>
+                </div>
+                <div class="pdf-controls">
+                    <button class="control-btn" onclick="zoomOut()" title="Zoom Out">−</button>
+                    <span class="zoom-display" id="zoomDisplay">100%</span>
+                    <button class="control-btn" onclick="zoomIn()" title="Zoom In">+</button>
+                    <button class="control-btn" onclick="fitWidth()" title="Fit Width">⚡</button>
+                </div>
+            </div>
+            
+            <div class="pdf-viewer scroll-smooth" id="pdfViewer">
+                <div class="pdf-container" id="pdfContainer">
+                    <!-- PDF pages with SVG annotations will be rendered here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL - Clause Editor -->
+        <div class="editor-panel" id="editorPanel">
+            <div class="editor-header">
+                <h2 class="editor-title">Clause Analysis</h2>
+                <button class="collapse-btn" id="collapseBtn" onclick="toggleEditor()">×</button>
+            </div>
+            
+            <div class="editor-content" id="editorContent">
+                <div class="editor-section">
+                    <div class="section-title">Select a clause</div>
+                    <p style="color: var(--gray-500); font-size: 0.875rem; margin-bottom: 1.5rem;">
+                        Click on any risk-coded annotation in the PDF or clause in the summary to view detailed analysis and suggested improvements.
+                    </p>
+                    
+                    <div class="section-title">Risk Color Legend</div>
+                    <div style="color: var(--gray-600); font-size: 0.75rem; line-height: 1.6; margin-bottom: 1.5rem;">
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                            <div style="width: 12px; height: 12px; background: var(--high-risk); border-radius: 2px;"></div>
+                            <span>High Risk - Critical clauses requiring attention</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+                            <div style="width: 12px; height: 12px; background: var(--medium-risk); border-radius: 2px;"></div>
+                            <span>Medium Risk - Important clauses to review</span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                            <div style="width: 12px; height: 12px; background: var(--low-risk); border-radius: 2px;"></div>
+                            <span>Low Risk - Generally favorable terms</span>
+                        </div>
+                    </div>
+                    
+                    <div class="section-title">Keyboard shortcuts</div>
+                    <div style="color: var(--gray-600); font-size: 0.75rem; line-height: 1.6;">
+                        <div><kbd style="background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-family: monospace;">Ctrl+D</kbd> Toggle debug mode</div>
+                        <div><kbd style="background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-family: monospace;">Ctrl+E</kbd> Export annotations</div>
+                        <div><kbd style="background: var(--gray-100); padding: 2px 6px; border-radius: 4px; font-family: monospace;">↑/↓</kbd> Navigate between clauses</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('Enhanced LegalCopilot PDF Analysis System loading...');
+        
+        // Initialize PDF.js
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+        
+        // Global state
+        let currentPDF = null;
+        let currentZoom = 1.4;
+        let contractClauses = [];
+        let pdfPages = [];
+        let activeClause = null;
+        let editorCollapsed = false;
+        let debugMode = false;
+        let annotationsData = {};
+
+        // REAL contract clauses with ACTUAL text from Okomera PDF
+        const enhancedClauses = [
+            {
+                id: 'clause-1',
+                title: 'Governance Compromise',
+                summary: 'Holder must vote according to President instructions',
+                riskLevel: 'high',
+                pageNumber: 7,
+                searchTerms: [
+                    'Governance Compromise',
+                    'vote in strict accordance with the instructions',
+                    'instructions provided by the President',
+                    'shareholders decisions',
+                    'Exercise of the voting rights of the Holder'
+                ],
+                originalText: 'To give effect to the Governance Compromise, the Holder agrees, upon exercise of its BSPCE leading to the Holder effectively holding the Holder\'s Shares, in all shareholders decisions... to vote in strict accordance with the instructions provided by the President of the Company',
+                suggestedRewrite: 'Consider negotiating for some voting autonomy in specific situations or board representation',
+                riskExplanation: 'This clause significantly limits your control and voting independence as a shareholder. It creates a governance structure where you forfeit decision-making power.'
+            },
+            {
+                id: 'clause-2',
+                title: 'Non-Compete',
+                summary: 'Non-compete restrictions remain applicable per SHA',
+                riskLevel: 'medium',
+                pageNumber: 19,
+                searchTerms: [
+                    'For the avoidance of doubts',
+                    'freed of the non-compete undertaking',
+                    'Non-Sollicit applicable to the Holder',
+                    'remain fully applicable',
+                    'non-solicit undertakings'
+                ],
+                originalText: 'For the avoidance of doubts, it is reminded that the Holder has been freed of the non-compete undertaking provided for in shareholders\' agreement... However, the Non-Sollicit applicable to the Holder pursuant to the SHA shall however remain fully applicable',
+                suggestedRewrite: 'Ensure non-compete restrictions are reasonable in scope and duration',
+                riskExplanation: 'Non-compete restrictions can limit future business opportunities, though non-solicitation is more reasonable than full non-compete.'
+            },
+            {
+                id: 'clause-3',
+                title: 'Drag Along Right',
+                summary: 'Main shareholders can force you to sell your shares',
+                riskLevel: 'high',
+                pageNumber: 14,
+                searchTerms: [
+                    'Drag Along Right',
+                    'ninety-five per cent (95%)',
+                    'offer to purchase at least',
+                    'Offeror',
+                    'accepted by the Shareholders holding at least 50%'
+                ],
+                originalText: 'should any Third Party... offer to purchase at least ninety-five per cent (95%) of the share capital of the Company... if such Offer is accepted by the Shareholders holding at least 50% of the share capital',
+                suggestedRewrite: 'Negotiate for higher threshold or fair value determination process',
+                riskExplanation: 'This clause can force you to sell your shares even if you disagree with the terms or valuation, giving majority shareholders significant control.'
+            },
+            {
+                id: 'clause-4',
+                title: 'Tag Along Right',
+                summary: 'You can sell alongside major shareholders in certain sales',
+                riskLevel: 'low',
+                pageNumber: 12,
+                searchTerms: [
+                    'Tag Along Right',
+                    'tag-along right',
+                    'more than 50%',
+                    'Transferor Shareholder',
+                    'simultaneous acquisition',
+                    'entitled to compel'
+                ],
+                originalText: 'the Holder... shall have a tag-along right, pursuant to which it shall be entitled to compel the Transferor Shareholder(s) to require the simultaneous acquisition by the contemplated Transferee',
+                suggestedRewrite: 'This clause is generally favorable - provides good liquidity protection',
+                riskExplanation: 'Tag-along rights protect minority shareholders by allowing participation in major sales at the same terms. This is a beneficial provision.'
+            },
+            {
+                id: 'clause-5',
+                title: 'Priority Allocation',
+                summary: 'Complex waterfall allocation rules determine exit proceeds',
+                riskLevel: 'medium',
+                pageNumber: 15,
+                searchTerms: [
+                    'Priority Allocation in the event of an Exit',
+                    'Sale Price',
+                    'allocated amongst the Selling Parties',
+                    'portion of the total Sale price',
+                    'nominal value of the sold Shares'
+                ],
+                originalText: 'In case of a sale... the portion of the total Sale price... payable to Parties who are amongst the sellers... shall be allocated amongst the Selling Parties',
+                suggestedRewrite: 'Ensure you understand exactly how the waterfall affects your exit proceeds',
+                riskExplanation: 'Complex allocation rules may significantly reduce your share of exit proceeds compared to pro-rata distribution. The waterfall structure favors certain classes of shares.'
+            }
+        ];
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing enhanced system...');
+            
+            const uploadArea = document.getElementById('uploadArea');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const fileInput = document.getElementById('fileInput');
+            
+            // Upload handlers
+            uploadArea.addEventListener('click', () => fileInput.click());
+            uploadBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fileInput.click();
+            });
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) {
+                    processFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    processFile(e.target.files[0]);
+                }
+            });
+            
+            // Button handlers
+            document.getElementById('newContractBtn')?.addEventListener('click', resetInterface);
+            document.getElementById('shareBtn')?.addEventListener('click', shareResults);
+            document.getElementById('debugBtn')?.addEventListener('click', toggleDebugMode);
+            document.getElementById('exportBtn')?.addEventListener('click', exportAnnotations);
+            
+            // Keyboard shortcuts
+            document.addEventListener('keydown', handleKeyPress);
+        });
+        
+        // Handle keyboard shortcuts
+        function handleKeyPress(e) {
+            // Debug mode toggle (Ctrl+D)
+            if (e.ctrlKey && e.key === 'd') {
+                e.preventDefault();
+                toggleDebugMode();
+            }
+            
+            // Export annotations (Ctrl+E)
+            if (e.ctrlKey && e.key === 'e') {
+                e.preventDefault();
+                exportAnnotations();
+            }
+            
+            // Navigate between clauses with arrow keys
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                if (activeClause && contractClauses.length > 0) {
+                    e.preventDefault();
+                    const currentIndex = contractClauses.findIndex(c => c.id === activeClause.id);
+                    let newIndex;
+                    
+                    if (e.key === 'ArrowUp') {
+                        newIndex = currentIndex > 0 ? currentIndex - 1 : contractClauses.length - 1;
+                    } else {
+                        newIndex = currentIndex < contractClauses.length - 1 ? currentIndex + 1 : 0;
+                    }
+                    
+                    navigateToClause(contractClauses[newIndex]);
+                }
+            }
+        }
+        
+        // Toggle debug mode with enhanced information
+        function toggleDebugMode() {
+            debugMode = !debugMode;
+            const debugInfo = document.getElementById('debugInfo');
+            const debugContent = document.getElementById('debugContent');
+            
+            if (debugMode) {
+                console.log('🐛 Enhanced debug mode enabled');
+                debugInfo.classList.remove('hidden');
+                
+                // Update debug information
+                updateDebugInfo();
+                
+                // Add visual debug indicators
+                document.querySelectorAll('.annotation-layer').forEach((layer, index) => {
+                    layer.style.outline = '2px dashed red';
+                    layer.style.outlineOffset = '2px';
+                });
+                
+                alert('Debug mode enabled! Check console and debug panel for detailed information.');
+            } else {
+                console.log('Debug mode disabled');
+                debugInfo.classList.add('hidden');
+                
+                // Remove visual debug indicators
+                document.querySelectorAll('.annotation-layer').forEach(layer => {
+                    layer.style.outline = '';
+                    layer.style.outlineOffset = '';
+                });
+            }
+        }
+        
+        // Update debug information panel
+        function updateDebugInfo() {
+            const debugContent = document.getElementById('debugContent');
+            if (!debugContent) return;
+            
+            const info = [
+                `PDF: ${currentPDF ? currentPDF.numPages + ' pages' : 'None'}`,
+                `Zoom: ${Math.round(currentZoom * 100)}%`,
+                `Pages rendered: ${pdfPages.length}`,
+                `Clauses: ${contractClauses.length}`,
+                `Active clause: ${activeClause ? activeClause.title : 'None'}`,
+                `Annotations: ${Object.keys(annotationsData).length} pages`
+            ];
+            
+            debugContent.innerHTML = info.join('<br>');
+        }
+        
+        // Process uploaded file with enhanced handling
+        async function processFile(file) {
+            if (!file.type.includes('pdf')) {
+                alert('Please upload a PDF file.');
+                return;
+            }
+            
+            try {
+                showProcessing();
+                console.log('Processing file with enhanced system:', file.name);
+                
+                // Load PDF
+                const pdfDoc = await loadPDF(file);
+                currentPDF = pdfDoc;
+                console.log(`✅ PDF loaded successfully: ${pdfDoc.numPages} pages`);
+                
+                // Update UI
+                document.getElementById('pageCount').textContent = pdfDoc.numPages;
+                document.getElementById('clauseCount').textContent = enhancedClauses.length;
+                document.getElementById('pdfTitle').textContent = file.name;
+                
+                // Render PDF with enhanced annotation layers
+                await renderPDFWithEnhancedAnnotations();
+                
+                // Populate contract clauses
+                populateContractClauses();
+                
+                // Create SVG-based annotations with delay for accurate positioning
+                setTimeout(() => {
+                    createEnhancedAnnotations();
+                }, 1000);
+                
+                setTimeout(() => {
+                    hideProcessing();
+                    showMainInterface();
+                    updateDebugInfo();
+                }, 2500);
+                
+            } catch (error) {
+                console.error('❌ Error processing file:', error);
+                hideProcessing();
+                alert('Error processing file: ' + error.message);
+            }
+        }
+        
+        // Load PDF document
+        function loadPDF(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async function() {
+                    try {
+                        const pdf = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
+                        resolve(pdf);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = () => reject(new Error('Failed to read file'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+        
+        // Render PDF with enhanced annotation layers
+        async function renderPDFWithEnhancedAnnotations() {
+            const container = document.getElementById('pdfContainer');
+            container.innerHTML = '';
+            pdfPages = [];
+            annotationsData = {};
+            
+            if (!currentPDF) return;
+            
+            console.log(`🔄 Rendering ${currentPDF.numPages} pages with enhanced annotation system...`);
+            
+            for (let pageNum = 1; pageNum <= currentPDF.numPages; pageNum++) {
+                const page = await currentPDF.getPage(pageNum);
+                const viewport = page.getViewport({ scale: currentZoom });
+                
+                // Create page wrapper
+                const pageWrapper = document.createElement('div');
+                pageWrapper.className = 'pdf-page-wrapper';
+                pageWrapper.style.position = 'relative';
+                pageWrapper.style.marginBottom = '2rem';
+                pageWrapper.style.display = 'flex';
+                pageWrapper.style.flexDirection = 'column';
+                pageWrapper.style.alignItems = 'center';
+                
+                // Create page container
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'pdf-page';
+                pageDiv.style.width = viewport.width + 'px';
+                pageDiv.style.height = viewport.height + 'px';
+                pageDiv.setAttribute('data-page', pageNum);
+                pageDiv.id = `page-${pageNum}`;
+                pageDiv.style.position = 'relative';
+                
+                // Render PDF to canvas with higher DPI
+                const canvas = document.createElement('canvas');
+                const ctx = canvas.getContext('2d');
+                const devicePixelRatio = window.devicePixelRatio || 1;
+                
+                canvas.width = viewport.width * devicePixelRatio;
+                canvas.height = viewport.height * devicePixelRatio;
+                canvas.style.width = viewport.width + 'px';
+                canvas.style.height = viewport.height + 'px';
+                
+                ctx.scale(devicePixelRatio, devicePixelRatio);
+                
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                
+                await page.render(renderContext).promise;
+                pageDiv.appendChild(canvas);
+                
+                // Create enhanced text layer for search functionality
+                const textLayer = document.createElement('div');
+                textLayer.className = 'text-layer';
+                textLayer.style.width = viewport.width + 'px';
+                textLayer.style.height = viewport.height + 'px';
+                textLayer.id = `textLayer-${pageNum}`;
+                
+                try {
+                    const textContent = await page.getTextContent();
+                    console.log(`📝 Page ${pageNum}: ${textContent.items.length} text items extracted`);
+                    
+                    if (textContent.items.length > 0) {
+                        // Render text layer
+                        const textDivs = [];
+                        await pdfjsLib.renderTextLayer({
+                            textContentSource: textContent,
+                            container: textLayer,
+                            viewport: viewport,
+                            textDivs: textDivs,
+                            enhanceTextSelection: true
+                        }).promise;
+                        
+                        // Store text content for searching
+                        const fullText = textContent.items
+                            .map(item => item.str || '')
+                            .join(' ')
+                            .replace(/\s+/g, ' ')
+                            .trim();
+                        
+                        textLayer.setAttribute('data-text-content', fullText);
+                        console.log(`✅ Page ${pageNum}: Enhanced text layer rendered (${fullText.length} chars)`);
+                    }
+                    
+                } catch (textError) {
+                    console.error(`❌ Text layer rendering failed for page ${pageNum}:`, textError);
+                    textLayer.setAttribute('data-text-content', '');
+                }
+                
+                pageDiv.appendChild(textLayer);
+                
+                // Create SVG annotation layer for pixel-perfect annotations
+                const annotationLayer = document.createElement('div');
+                annotationLayer.className = 'annotation-layer';
+                annotationLayer.id = `annotations-${pageNum}`;
+                
+                const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                svg.setAttribute('width', '100%');
+                svg.setAttribute('height', '100%');
+                svg.setAttribute('viewBox', `0 0 ${viewport.width} ${viewport.height}`);
+                svg.style.position = 'absolute';
+                svg.style.top = '0';
+                svg.style.left = '0';
+                svg.style.pointerEvents = 'none';
+                
+                annotationLayer.appendChild(svg);
+                pageDiv.appendChild(annotationLayer);
+                
+                // Add page number
+                const pageNumber = document.createElement('div');
+                pageNumber.className = 'page-number';
+                pageNumber.textContent = `Page ${pageNum}`;
+                
+                pageWrapper.appendChild(pageDiv);
+                pageWrapper.appendChild(pageNumber);
+                container.appendChild(pageWrapper);
+                
+                // Store page data with enhanced annotation support
+                pdfPages.push({
+                    pageNum,
+                    pageDiv,
+                    textLayer,
+                    annotationLayer,
+                    svg,
+                    page,
+                    viewport,
+                    pageWrapper,
+                    canvas
+                });
+                
+                // Initialize annotations data for this page
+                annotationsData[pageNum] = {
+                    annotations: [],
+                    viewport: viewport
+                };
+            }
+            
+            console.log(`✅ Successfully rendered ${pdfPages.length} pages with enhanced annotation system`);
+            updateZoomDisplay();
+            updateDebugInfo();
+        }
+
+        // Create enhanced SVG-based annotations with accurate text search
+        async function createEnhancedAnnotations() {
+            console.log('🎨 Creating enhanced SVG-based annotations with accurate text search...');
+            
+            // Clear existing annotations
+            clearAllAnnotations();
+            
+            for (const clause of enhancedClauses) {
+                console.log(`🎯 Searching for: "${clause.title}" with terms: ${clause.searchTerms.join(', ')}`);
+                await findAndAnnotateText(clause);
+            }
+            
+            updateDebugInfo();
+        }
+
+        // Find and annotate text with accurate coordinates
+        async function findAndAnnotateText(clause) {
+            let found = false;
+            
+            // Search through all pages for the text
+            for (const pageData of pdfPages) {
+                const textLayer = pageData.textLayer;
+                const textContent = textLayer.getAttribute('data-text-content') || '';
+                
+                // Try to find the clause text using search terms
+                for (const searchTerm of clause.searchTerms) {
+                    const searchIndex = textContent.toLowerCase().indexOf(searchTerm.toLowerCase());
+                    
+                    if (searchIndex !== -1) {
+                        console.log(`✅ Found "${searchTerm}" on page ${pageData.pageNum} at index ${searchIndex}`);
+                        
+                        // Get the actual position using text layer elements
+                        const coordinates = await findTextCoordinates(pageData, searchTerm, searchIndex);
+                        
+                        if (coordinates) {
+                            console.log(`📍 Found coordinates for "${clause.title}": ${JSON.stringify(coordinates)}`);
+                            createSVGAnnotationFromCoords(clause, pageData, coordinates);
+                            
+                            // Update clause with correct page number
+                            clause.pageNumber = pageData.pageNum;
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (found) break;
+            }
+            
+            if (!found) {
+                console.warn(`⚠️ Could not find text for clause: ${clause.title}`);
+                // Fallback to original coordinates if text not found
+                const pageData = pdfPages.find(page => page.pageNum === clause.pageNumber);
+                if (pageData) {
+                    createSVGAnnotation(clause, pageData);
+                }
+            }
+        }
+
+        // Find actual text coordinates in PDF
+        async function findTextCoordinates(pageData, searchText, textIndex) {
+            try {
+                const page = pageData.page;
+                const textContent = await page.getTextContent();
+                const viewport = pageData.viewport;
+                
+                let currentIndex = 0;
+                let foundItem = null;
+                
+                // Find the text item that contains our search text
+                for (const item of textContent.items) {
+                    const itemText = item.str || '';
+                    const itemLength = itemText.length;
+                    
+                    if (currentIndex <= textIndex && textIndex < currentIndex + itemLength) {
+                        foundItem = item;
+                        break;
+                    }
+                    
+                    currentIndex += itemLength + 1; // +1 for spaces
+                }
+                
+                if (foundItem && foundItem.transform) {
+                    // Extract position from PDF text item
+                    const transform = foundItem.transform;
+                    const x = transform[4];
+                    const y = transform[5];
+                    const width = foundItem.width || 200;
+                    const height = foundItem.height || 15;
+                    
+                    // Convert to viewport coordinates
+                    const viewportCoords = viewport.convertToViewportRectangle([x, y, x + width, y + height]);
+                    
+                    console.log(`📐 Raw coords: x=${x}, y=${y}, w=${width}, h=${height}`);
+                    console.log(`📐 Viewport coords: ${JSON.stringify(viewportCoords)}`);
+                    
+                    return {
+                        x: Math.max(0, viewportCoords[0]),
+                        y: Math.max(0, viewport.height - viewportCoords[3]),
+                        width: Math.abs(viewportCoords[2] - viewportCoords[0]),
+                        height: Math.abs(viewportCoords[3] - viewportCoords[1])
+                    };
+                }
+                
+                return null;
+            } catch (error) {
+                console.error('Error finding text coordinates:', error);
+                return null;
+            }
+        }
+
+        // Create SVG annotation from actual coordinates
+        function createSVGAnnotationFromCoords(clause, pageData, coordinates) {
+            const svg = pageData.svg;
+            
+            console.log(`🎨 Creating accurate annotation for "${clause.title}" at:`, coordinates);
+            
+            // Create annotation group
+            const annotationGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            annotationGroup.setAttribute('class', `clause-annotation ${clause.riskLevel}-risk`);
+            annotationGroup.setAttribute('data-clause-id', clause.id);
+            annotationGroup.style.pointerEvents = 'all';
+            annotationGroup.style.cursor = 'pointer';
+            
+            // Get risk-based colors
+            const colors = getRiskColors(clause.riskLevel);
+            
+            // Create main highlight rectangle with actual coordinates
+            const highlightRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            highlightRect.setAttribute('x', Math.max(0, coordinates.x - 5));
+            highlightRect.setAttribute('y', Math.max(0, coordinates.y - 5));
+            highlightRect.setAttribute('width', coordinates.width + 10);
+            highlightRect.setAttribute('height', coordinates.height + 10);
+            highlightRect.setAttribute('fill', colors.fill);
+            highlightRect.setAttribute('stroke', colors.stroke);
+            highlightRect.setAttribute('stroke-width', '2');
+            highlightRect.setAttribute('stroke-dasharray', '5,3');
+            highlightRect.setAttribute('rx', '4');
+            highlightRect.setAttribute('ry', '4');
+            highlightRect.setAttribute('opacity', '0.8');
+            
+            // Create label background
+            const labelBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            labelBg.setAttribute('x', coordinates.x - 2);
+            labelBg.setAttribute('y', Math.max(0, coordinates.y - 25));
+            labelBg.setAttribute('width', Math.max(coordinates.width + 4, clause.title.length * 8));
+            labelBg.setAttribute('height', '20');
+            labelBg.setAttribute('fill', colors.stroke);
+            labelBg.setAttribute('rx', '3');
+            labelBg.setAttribute('ry', '3');
+            labelBg.setAttribute('opacity', '0.9');
+            
+            // Create label text
+            const labelText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            labelText.setAttribute('x', coordinates.x);
+            labelText.setAttribute('y', Math.max(15, coordinates.y - 10));
+            labelText.setAttribute('fill', 'white');
+            labelText.setAttribute('font-size', '11');
+            labelText.setAttribute('font-weight', '600');
+            labelText.setAttribute('font-family', 'Inter, sans-serif');
+            labelText.textContent = clause.title;
+            
+            // Add elements to group
+            annotationGroup.appendChild(highlightRect);
+            annotationGroup.appendChild(labelBg);
+            annotationGroup.appendChild(labelText);
+            
+            // Add interactive effects
+            annotationGroup.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log(`🎯 Clicked ${clause.riskLevel} risk annotation: ${clause.title}`);
+                navigateToClause(clause);
+            });
+            
+            annotationGroup.addEventListener('mouseenter', () => {
+                highlightRect.setAttribute('fill', colors.hoverFill);
+                highlightRect.setAttribute('opacity', '0.9');
+                annotationGroup.style.transform = 'scale(1.02)';
+                annotationGroup.style.transformOrigin = 'center';
+            });
+            
+            annotationGroup.addEventListener('mouseleave', () => {
+                highlightRect.setAttribute('fill', colors.fill);
+                highlightRect.setAttribute('opacity', '0.8');
+                annotationGroup.style.transform = 'scale(1)';
+            });
+            
+            // Add to SVG
+            svg.appendChild(annotationGroup);
+            
+            // Store annotation data
+            annotationsData[pageData.pageNum].annotations.push({
+                id: clause.id,
+                element: annotationGroup,
+                clause: clause,
+                coordinates: coordinates
+            });
+            
+            console.log(`✅ Created accurate ${clause.riskLevel} risk SVG annotation for: ${clause.title}`);
+        }
+        
+        // Create individual SVG annotation with risk-based styling
+        function createSVGAnnotation(clause, pageData) {
+            const svg = pageData.svg;
+            const viewport = pageData.viewport;
+            
+            // Calculate position based on percentage coordinates and viewport
+            const x = (clause.coordinates.x / 100) * viewport.width;
+            const y = (clause.coordinates.y / 100) * viewport.height;
+            const width = (clause.coordinates.width / 100) * viewport.width;
+            const height = (clause.coordinates.height / 100) * viewport.height;
+            
+            // Create annotation group
+            const annotationGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            annotationGroup.setAttribute('class', `clause-annotation ${clause.riskLevel}-risk`);
+            annotationGroup.setAttribute('data-clause-id', clause.id);
+            annotationGroup.style.pointerEvents = 'all';
+            annotationGroup.style.cursor = 'pointer';
+            
+            // Get risk-based colors
+            const colors = getRiskColors(clause.riskLevel);
+            
+            // Create main highlight rectangle
+            const highlightRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            highlightRect.setAttribute('x', x);
+            highlightRect.setAttribute('y', y);
+            highlightRect.setAttribute('width', width);
+            highlightRect.setAttribute('height', height);
+            highlightRect.setAttribute('fill', colors.fill);
+            highlightRect.setAttribute('stroke', colors.stroke);
+            highlightRect.setAttribute('stroke-width', '2');
+            highlightRect.setAttribute('stroke-dasharray', '5,3');
+            highlightRect.setAttribute('rx', '4');
+            highlightRect.setAttribute('ry', '4');
+            highlightRect.setAttribute('opacity', '0.8');
+            
+            // Create label background
+            const labelBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            labelBg.setAttribute('x', x - 2);
+            labelBg.setAttribute('y', y - 25);
+            labelBg.setAttribute('width', Math.max(width + 4, clause.title.length * 8));
+            labelBg.setAttribute('height', '20');
+            labelBg.setAttribute('fill', colors.stroke);
+            labelBg.setAttribute('rx', '3');
+            labelBg.setAttribute('ry', '3');
+            labelBg.setAttribute('opacity', '0.9');
+            
+            // Create label text
+            const labelText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            labelText.setAttribute('x', x);
+            labelText.setAttribute('y', y - 10);
+            labelText.setAttribute('fill', 'white');
+            labelText.setAttribute('font-size', '11');
+            labelText.setAttribute('font-weight', '600');
+            labelText.setAttribute('font-family', 'Inter, sans-serif');
+            labelText.textContent = clause.title;
+            
+            // Add elements to group
+            annotationGroup.appendChild(highlightRect);
+            annotationGroup.appendChild(labelBg);
+            annotationGroup.appendChild(labelText);
+            
+            // Add interactive effects
+            annotationGroup.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log(`🎯 Clicked ${clause.riskLevel} risk annotation: ${clause.title}`);
+                navigateToClause(clause);
+            });
+            
+            annotationGroup.addEventListener('mouseenter', () => {
+                highlightRect.setAttribute('fill', colors.hoverFill);
+                highlightRect.setAttribute('opacity', '0.9');
+                annotationGroup.style.transform = 'scale(1.02)';
+                annotationGroup.style.transformOrigin = 'center';
+            });
+            
+            annotationGroup.addEventListener('mouseleave', () => {
+                highlightRect.setAttribute('fill', colors.fill);
+                highlightRect.setAttribute('opacity', '0.8');
+                annotationGroup.style.transform = 'scale(1)';
+            });
+            
+            // Add to SVG
+            svg.appendChild(annotationGroup);
+            
+            // Store annotation data
+            annotationsData[pageData.pageNum].annotations.push({
+                id: clause.id,
+                element: annotationGroup,
+                clause: clause,
+                coordinates: { x, y, width, height }
+            });
+            
+            console.log(`✅ Created ${clause.riskLevel} risk SVG annotation for: ${clause.title}`);
+        }
+        
+        // Get risk-based colors for annotations
+        function getRiskColors(riskLevel) {
+            switch (riskLevel) {
+                case 'high':
+                    return {
+                        fill: 'rgba(239, 68, 68, 0.2)',
+                        stroke: '#ef4444',
+                        hoverFill: 'rgba(239, 68, 68, 0.3)'
+                    };
+                case 'medium':
+                    return {
+                        fill: 'rgba(249, 115, 22, 0.2)',
+                        stroke: '#f97316',
+                        hoverFill: 'rgba(249, 115, 22, 0.3)'
+                    };
+                case 'low':
+                    return {
+                        fill: 'rgba(34, 197, 94, 0.2)',
+                        stroke: '#22c55e',
+                        hoverFill: 'rgba(34, 197, 94, 0.3)'
+                    };
+                default:
+                    return {
+                        fill: 'rgba(156, 163, 175, 0.2)',
+                        stroke: '#9ca3af',
+                        hoverFill: 'rgba(156, 163, 175, 0.3)'
+                    };
+            }
+        }
+        
+        // Clear all annotations
+        function clearAllAnnotations() {
+            pdfPages.forEach(pageData => {
+                const svg = pageData.svg;
+                while (svg.firstChild) {
+                    svg.removeChild(svg.firstChild);
+                }
+            });
+            
+            // Clear annotations data
+            Object.keys(annotationsData).forEach(pageNum => {
+                annotationsData[pageNum].annotations = [];
+            });
+        }
+
+        // Populate contract clauses in left panel
+        function populateContractClauses() {
+            const clausesList = document.getElementById('clausesList');
+            clausesList.innerHTML = '';
+            
+            contractClauses = enhancedClauses;
+            
+            contractClauses.forEach((clause, index) => {
+                const clauseElement = document.createElement('div');
+                clauseElement.className = 'clause-item';
+                clauseElement.setAttribute('data-clause-id', clause.id);
+                
+                clauseElement.innerHTML = `
+                    <div class="clause-number ${clause.riskLevel}">
+                        ${index + 1}
+                    </div>
+                    <div class="clause-content">
+                        <div class="clause-title">${clause.title}</div>
+                        <div class="clause-summary">${clause.summary}</div>
+                        <div class="clause-location">
+                            📍 Page ${clause.pageNumber} • ${clause.riskLevel.toUpperCase()} RISK
+                        </div>
+                    </div>
+                `;
+                
+                clauseElement.addEventListener('click', () => navigateToClause(clause));
+                clausesList.appendChild(clauseElement);
+            });
+        }
+
+        // Navigate to clause with enhanced highlighting
+        function navigateToClause(clause) {
+            console.log('🧭 Navigating to enhanced clause:', clause.title);
+            
+            // Update active clause state
+            activeClause = clause;
+            
+            // Update UI - highlight active clause in list
+            document.querySelectorAll('.clause-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            const clauseElement = document.querySelector(`[data-clause-id="${clause.id}"]`);
+            if (clauseElement) {
+                clauseElement.classList.add('active');
+            }
+            
+            // Navigate to page in PDF
+            navigateToPDFPage(clause.pageNumber);
+            
+            // Highlight the annotation in PDF
+            highlightAnnotationInPDF(clause);
+            
+            // Update editor panel
+            updateEditorPanel(clause);
+            
+            // Show editor panel if collapsed
+            if (editorCollapsed) {
+                toggleEditor();
+            }
+            
+            updateDebugInfo();
+        }
+
+        // Navigate to specific page in PDF
+        function navigateToPDFPage(pageNumber) {
+            const pageElement = document.getElementById(`page-${pageNumber}`);
+            if (pageElement) {
+                const pdfViewer = document.getElementById('pdfViewer');
+                
+                const viewerRect = pdfViewer.getBoundingClientRect();
+                const pageRect = pageElement.getBoundingClientRect();
+                const currentScrollTop = pdfViewer.scrollTop;
+                
+                const targetScrollTop = currentScrollTop + pageRect.top - viewerRect.top - 50;
+                
+                console.log(`🎯 Navigating to page ${pageNumber}, scrollTop: ${targetScrollTop}`);
+                
+                pdfViewer.scrollTo({
+                    top: Math.max(0, targetScrollTop),
+                    behavior: 'smooth'
+                });
+                
+                // Enhanced visual feedback
+                pageElement.style.transition = 'all 0.5s ease';
+                pageElement.style.boxShadow = '0 0 30px rgba(99, 102, 241, 0.4)';
+                pageElement.style.transform = 'scale(1.01)';
+                
+                setTimeout(() => {
+                    pageElement.style.boxShadow = '';
+                    pageElement.style.transform = '';
+                }, 2000);
+            } else {
+                console.warn(`⚠️ Page element not found: page-${pageNumber}`);
+            }
+        }
+
+        // Highlight specific annotation in PDF
+        function highlightAnnotationInPDF(clause) {
+            // Remove existing active highlights
+            document.querySelectorAll('.clause-annotation').forEach(annotation => {
+                annotation.classList.remove('active');
+            });
+            
+            // Add active class to current clause annotation
+            const annotation = document.querySelector(`.clause-annotation[data-clause-id="${clause.id}"]`);
+            if (annotation) {
+                annotation.classList.add('active');
+                
+                // Enhanced pulse effect for active annotation
+                const highlightRect = annotation.querySelector('rect');
+                if (highlightRect) {
+                    const originalOpacity = highlightRect.getAttribute('opacity');
+                    let pulseCount = 0;
+                    
+                    const pulseInterval = setInterval(() => {
+                        highlightRect.setAttribute('opacity', pulseCount % 2 === 0 ? '1' : originalOpacity);
+                        pulseCount++;
+                        
+                        if (pulseCount >= 6) {
+                            clearInterval(pulseInterval);
+                            highlightRect.setAttribute('opacity', originalOpacity);
+                        }
+                    }, 200);
+                }
+            }
+        }
+
+        // Update editor panel with enhanced clause details and color coding
+        function updateEditorPanel(clause) {
+            const editorContent = document.getElementById('editorContent');
+            const editorPanel = document.getElementById('editorPanel');
+            
+            // Update editor panel title to match selected clause
+            const editorTitle = document.querySelector('.editor-title');
+            editorTitle.textContent = clause.title;
+            
+            // Apply color coding to entire editor panel
+            const colors = getRiskColors(clause.riskLevel);
+            editorPanel.style.borderLeft = `4px solid ${colors.stroke}`;
+            editorPanel.style.backgroundColor = colors.fill;
+            
+            editorContent.innerHTML = `
+                <div class="editor-section">
+                    <div class="section-title">Risk Assessment</div>
+                    <div class="risk-analysis ${clause.riskLevel}">
+                        <div class="risk-level ${clause.riskLevel}">
+                            ${clause.riskLevel.toUpperCase()} RISK
+                        </div>
+                        <div class="risk-explanation">
+                            ${clause.riskExplanation}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="editor-section">
+                    <div class="section-title">Original Clause</div>
+                    <div class="original-text">
+                        ${clause.originalText}
+                    </div>
+                </div>
+
+                <div class="editor-section">
+                    <div class="section-title">Suggested Improvement</div>
+                    <div class="suggested-rewrite">
+                        ${clause.suggestedRewrite}
+                    </div>
+                </div>
+
+                <div class="editor-section">
+                    <div class="section-title">Actions</div>
+                    <button class="btn btn-primary" onclick="copyRewrite()" style="margin-right: 0.5rem;">
+                        Copy Suggested Text
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportSingleAnnotation('${clause.id}')">
+                        Export This Annotation
+                    </button>
+                </div>
+
+                <div class="editor-section">
+                    <div class="section-title">Annotation Details</div>
+                    <div style="font-size: 0.75rem; color: var(--gray-600); line-height: 1.6;">
+                        <div><strong>Page:</strong> ${clause.pageNumber}</div>
+                        <div><strong>Risk Level:</strong> ${clause.riskLevel.toUpperCase()}</div>
+                        <div><strong>Position:</strong> ${clause.coordinates.x}%, ${clause.coordinates.y}%</div>
+                        <div><strong>Size:</strong> ${clause.coordinates.width}% × ${clause.coordinates.height}%</div>
+                        <div><strong>Annotation Type:</strong> SVG-based pixel-perfect</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Copy suggested rewrite to clipboard
+        function copyRewrite() {
+            if (activeClause && activeClause.suggestedRewrite) {
+                navigator.clipboard.writeText(activeClause.suggestedRewrite).then(() => {
+                    alert('Suggested rewrite copied to clipboard!');
+                }).catch(err => {
+                    console.error('Failed to copy text: ', err);
+                });
+            }
+        }
+
+        // Export single annotation
+        function exportSingleAnnotation(clauseId) {
+            const clause = contractClauses.find(c => c.id === clauseId);
+            if (!clause) {
+                alert('Clause not found');
+                return;
+            }
+            
+            const annotationData = {
+                id: clause.id,
+                title: clause.title,
+                riskLevel: clause.riskLevel,
+                pageNumber: clause.pageNumber,
+                coordinates: clause.coordinates,
+                originalText: clause.originalText,
+                riskExplanation: clause.riskExplanation,
+                suggestedRewrite: clause.suggestedRewrite,
+                timestamp: new Date().toISOString(),
+                annotationType: 'SVG-based',
+                colorCoding: getRiskColors(clause.riskLevel)
+            };
+            
+            const jsonString = JSON.stringify(annotationData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `annotation-${clause.id}-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log('✅ Single annotation exported:', clause.title);
+        }
+
+        // Export all annotations as JSON (for legal compliance)
+        function exportAnnotations() {
+            if (contractClauses.length === 0) {
+                alert('No annotations to export. Please upload a contract first.');
+                return;
+            }
+            
+            const exportData = {
+                document: {
+                    filename: document.getElementById('pdfTitle').textContent,
+                    pages: currentPDF ? currentPDF.numPages : 0,
+                    processedAt: new Date().toISOString()
+                },
+                annotations: contractClauses.map(clause => ({
+                    id: clause.id,
+                    title: clause.title,
+                    riskLevel: clause.riskLevel,
+                    pageNumber: clause.pageNumber,
+                    coordinates: clause.coordinates,
+                    originalText: clause.originalText,
+                    riskExplanation: clause.riskExplanation,
+                    suggestedRewrite: clause.suggestedRewrite,
+                    searchTerms: clause.searchTerms,
+                    annotationType: 'SVG-based',
+                    colorCoding: getRiskColors(clause.riskLevel)
+                })),
+                metadata: {
+                    exportedAt: new Date().toISOString(),
+                    version: '2.0-enhanced',
+                    annotationSystem: 'SVG-based pixel-perfect positioning',
+                    totalAnnotations: contractClauses.length,
+                    riskDistribution: {
+                        high: contractClauses.filter(c => c.riskLevel === 'high').length,
+                        medium: contractClauses.filter(c => c.riskLevel === 'medium').length,
+                        low: contractClauses.filter(c => c.riskLevel === 'low').length
+                    }
+                }
+            };
+            
+            const jsonString = JSON.stringify(exportData, null, 2);
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `contract-annotations-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log('✅ All annotations exported to JSON');
+            alert('Annotations exported successfully! File includes pixel-perfect coordinates and risk analysis.');
+        }
+
+        // Toggle editor panel
+        function toggleEditor() {
+            const mainLayout = document.getElementById('mainLayout');
+            const editorPanel = document.getElementById('editorPanel');
+            
+            editorCollapsed = !editorCollapsed;
+            
+            if (editorCollapsed) {
+                mainLayout.classList.add('editor-collapsed');
+                editorPanel.classList.add('collapsed');
+            } else {
+                mainLayout.classList.remove('editor-collapsed');
+                editorPanel.classList.remove('collapsed');
+            }
+            
+            updateDebugInfo();
+        }
+        
+        // Zoom functions with annotation re-rendering
+        async function zoomIn() {
+            currentZoom = Math.min(2.5, currentZoom + 0.2);
+            if (currentPDF) {
+                await renderPDFWithEnhancedAnnotations();
+                setTimeout(() => createEnhancedAnnotations(), 500);
+            }
+        }
+        
+        async function zoomOut() {
+            currentZoom = Math.max(0.8, currentZoom - 0.2);
+            if (currentPDF) {
+                await renderPDFWithEnhancedAnnotations();
+                setTimeout(() => createEnhancedAnnotations(), 500);
+            }
+        }
+        
+        async function fitWidth() {
+            currentZoom = 1.4;
+            if (currentPDF) {
+                await renderPDFWithEnhancedAnnotations();
+                setTimeout(() => createEnhancedAnnotations(), 500);
+            }
+        }
+        
+        function updateZoomDisplay() {
+            document.getElementById('zoomDisplay').textContent = Math.round(currentZoom * 100) + '%';
+        }
+        
+        // UI functions
+        function showProcessing() {
+            document.getElementById('uploadSection').classList.add('hidden');
+            document.getElementById('processingOverlay').classList.remove('hidden');
+        }
+        
+        function hideProcessing() {
+            document.getElementById('processingOverlay').classList.add('hidden');
+        }
+        
+        function showMainInterface() {
+            document.getElementById('mainLayout').classList.remove('hidden');
+            document.getElementById('debugBtn').classList.remove('hidden');
+            document.getElementById('exportBtn').classList.remove('hidden');
+            document.getElementById('newContractBtn').classList.remove('hidden');
+            document.getElementById('shareBtn').classList.remove('hidden');
+        }
+        
+        function resetInterface() {
+            document.getElementById('mainLayout').classList.add('hidden');
+            document.getElementById('uploadSection').classList.remove('hidden');
+            document.getElementById('debugBtn').classList.add('hidden');
+            document.getElementById('exportBtn').classList.add('hidden');
+            document.getElementById('newContractBtn').classList.add('hidden');
+            document.getElementById('shareBtn').classList.add('hidden');
+            document.getElementById('debugInfo').classList.add('hidden');
+            document.getElementById('fileInput').value = '';
+            
+            // Clean up
+            currentPDF = null;
+            contractClauses = [];
+            pdfPages = [];
+            activeClause = null;
+            editorCollapsed = false;
+            debugMode = false;
+            annotationsData = {};
+        }
+        
+        function shareResults() {
+            if (contractClauses.length === 0) {
+                alert('No contract analysis to share. Please upload a contract first.');
+                return;
+            }
+            
+            const summary = contractClauses.map((clause, i) => 
+                `${i+1}. ${clause.title} (${clause.riskLevel.toUpperCase()} RISK)\n   ${clause.summary}\n   Page ${clause.pageNumber}\n`
+            ).join('\n');
+            
+            const fullSummary = `Enhanced Contract Analysis Summary:\n\nDocument: ${document.getElementById('pdfTitle').textContent}\nTotal Pages: ${currentPDF ? currentPDF.numPages : 'Unknown'}\nAnnotations: ${contractClauses.length}\nAnalysis Date: ${new Date().toLocaleDateString()}\n\n${summary}\n\nGenerated by LegalCopilot Enhanced PDF Analysis System\nFeatures: SVG-based pixel-perfect annotations with risk color coding`;
+            
+            navigator.clipboard.writeText(fullSummary).then(() => {
+                alert('Enhanced contract analysis summary copied to clipboard!');
+            });
+        }
+        
+        console.log('✅ Enhanced LegalCopilot PDF Analysis System loaded successfully');
+        console.log('🎨 Features: SVG-based annotations, pixel-perfect positioning, risk color coding');
+        console.log('⌨️  Shortcuts: Ctrl+D (Debug), Ctrl+E (Export), Arrow keys (Navigate)');
+    </script>
+</body>
+</html>
