@@ -1,0 +1,2 @@
+# legalcopilot
+Legal copilot app
