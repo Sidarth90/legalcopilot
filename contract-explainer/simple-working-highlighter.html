@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LegalCopilot - Simple Working Version</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        
+        .header { background: white; padding: 20px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        
+        .container { display: flex; height: calc(100vh - 100px); }
+        
+        .sidebar { width: 25%; background: white; padding: 20px; border-right: 1px solid #ddd; }
+        .main { width: 75%; background: white; padding: 20px; overflow-y: auto; }
+        
+        .upload { text-align: center; padding: 40px; }
+        .file-input { display: block; margin: 20px auto; padding: 12px; width: 300px; }
+        .btn { background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; }
+        
+        .clause-item { 
+            padding: 12px; margin: 8px 0; background: #f8f9fa; border-radius: 6px; cursor: pointer;
+            border-left: 4px solid #dee2e6;
+        }
+        .clause-item:hover { background: #e9ecef; }
+        .clause-item.active { background: #e7f3ff; border-left-color: #007bff; }
+        
+        .page { margin-bottom: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: white; }
+        .page-header { font-weight: bold; color: #007bff; margin-bottom: 15px; }
+        
+        /* Simple highlighting */
+        .article-highlight { background: yellow; padding: 2px 4px; border-radius: 3px; font-weight: bold; }
+        
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏛️ LegalCopilot - Simple Working Version</h1>
+        <p>Step 1: Load PDF and find articles</p>
+    </div>
+
+    <div id="uploadSection" class="upload">
+        <h2>Upload PDF Contract</h2>
+        <input type="file" id="fileInput" class="file-input" accept=".pdf" />
+        <button id="processBtn" class="btn">Load PDF</button>
+    </div>
+
+    <div id="mainLayout" class="container hidden">
+        <div class="sidebar">
+            <h3>Contract Articles</h3>
+            <div class="clause-item" data-article="1.5">
+                <strong>Article 1.5</strong><br>
+                <small>Drag Along Right</small>
+            </div>
+            <div class="clause-item" data-article="2.1">
+                <strong>Article 2.1</strong><br>
+                <small>Governance</small>
+            </div>
+            <div class="clause-item" data-article="3.6">
+                <strong>Article 3.6</strong><br>
+                <small>Tag Along Right</small>
+            </div>
+        </div>
+
+        <div class="main">
+            <div id="documentContent">
+                <!-- PDF content will load here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        // STEP 1: Just load PDF and find "1.5", "2.1", "3.6" anywhere
+        document.getElementById('processBtn').addEventListener('click', async function() {
+            const fileInput = document.getElementById('fileInput');
+            const uploadSection = document.getElementById('uploadSection');
+            const mainLayout = document.getElementById('mainLayout');
+            const documentContent = document.getElementById('documentContent');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Please select a PDF file');
+                return;
+            }
+            
+            console.log('📄 Loading PDF...');
+            uploadSection.classList.add('hidden');
+            mainLayout.classList.remove('hidden');
+            
+            try {
+                const file = fileInput.files[0];
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+                
+                console.log(`✅ PDF loaded: ${pdf.numPages} pages`);
+                
+                let allText = '';
+                
+                // Load all pages
+                for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                    console.log(`📖 Processing page ${pageNum}...`);
+                    const page = await pdf.getPage(pageNum);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    
+                    // SIMPLE: Just highlight "1.5", "2.1", "3.6" wherever they appear
+                    let highlightedText = pageText;
+                    highlightedText = highlightedText.replace(/\b1\.5\b/g, '<span class="article-highlight" data-article="1.5">1.5</span>');
+                    highlightedText = highlightedText.replace(/\b2\.1\b/g, '<span class="article-highlight" data-article="2.1">2.1</span>');
+                    highlightedText = highlightedText.replace(/\b3\.6\b/g, '<span class="article-highlight" data-article="3.6">3.6</span>');
+                    
+                    allText += `
+                        <div class="page" id="page-${pageNum}">
+                            <div class="page-header">Page ${pageNum}</div>
+                            <div>${highlightedText}</div>
+                        </div>
+                    `;
+                }
+                
+                documentContent.innerHTML = allText;
+                console.log('✅ PDF processed with simple highlighting');
+                
+            } catch (error) {
+                console.error('❌ Error:', error);
+                documentContent.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        });
+        
+        // STEP 2: Simple click-to-scroll
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.clause-item')) {
+                const clauseItem = e.target.closest('.clause-item');
+                const articleNum = clauseItem.dataset.article;
+                
+                // Remove active states
+                document.querySelectorAll('.clause-item').forEach(item => item.classList.remove('active'));
+                clauseItem.classList.add('active');
+                
+                console.log(`🎯 Looking for article ${articleNum}`);
+                
+                // Find highlighted article
+                const highlighted = document.querySelector(`[data-article="${articleNum}"]`);
+                if (highlighted) {
+                    highlighted.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    console.log(`✅ Scrolled to article ${articleNum}`);
+                } else {
+                    console.warn(`❌ Article ${articleNum} not found`);
+                }
+            }
+        });
+        
+        console.log('🚀 Simple version ready');
+    </script>
+</body>
+</html>

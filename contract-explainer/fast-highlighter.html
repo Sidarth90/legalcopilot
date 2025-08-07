@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LegalCopilot - Fast Version</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f5f5f5; }
+        
+        .header { background: white; padding: 15px; text-align: center; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .container { display: flex; height: calc(100vh - 80px); }
+        
+        .sidebar { width: 25%; background: white; padding: 15px; border-right: 1px solid #ddd; }
+        .main { width: 75%; background: white; padding: 15px; overflow-y: auto; }
+        
+        .upload { text-align: center; padding: 40px; }
+        .file-input { display: block; margin: 15px auto; padding: 10px; width: 300px; }
+        .btn { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; }
+        .btn:disabled { background: #6c757d; cursor: not-allowed; }
+        
+        .clause-item { 
+            padding: 10px; margin: 6px 0; background: #f8f9fa; border-radius: 6px; cursor: pointer;
+            border-left: 4px solid #007bff;
+        }
+        .clause-item:hover { background: #e9ecef; }
+        .clause-item.active { background: #e7f3ff; }
+        
+        .page { margin-bottom: 15px; padding: 15px; border: 1px solid #ddd; border-radius: 6px; background: white; }
+        .page-header { font-weight: bold; color: #007bff; margin-bottom: 10px; font-size: 14px; }
+        
+        .article-highlight { 
+            background: yellow; padding: 2px 4px; border-radius: 3px; font-weight: bold; 
+            cursor: pointer; border: 2px solid #ffd700;
+        }
+        .article-highlight:hover { background: #ffeb3b; }
+        
+        .progress { background: #e9ecef; border-radius: 10px; height: 8px; margin: 10px 0; overflow: hidden; }
+        .progress-bar { background: #007bff; height: 100%; width: 0%; transition: width 0.3s ease; }
+        
+        .hidden { display: none; }
+        .loading { display: none; text-align: center; padding: 15px; background: #e3f2fd; border-radius: 6px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏛️ LegalCopilot - Fast Version</h1>
+        <p>Quick PDF processing without backend delays</p>
+    </div>
+
+    <div id="uploadSection" class="upload">
+        <h2>Upload PDF Contract</h2>
+        <input type="file" id="fileInput" class="file-input" accept=".pdf" />
+        <button id="processBtn" class="btn">Process PDF (Fast)</button>
+        <div id="loadingIndicator" class="loading">
+            <div>📄 Processing PDF...</div>
+            <div class="progress"><div id="progressBar" class="progress-bar"></div></div>
+            <div id="progressText">Initializing...</div>
+        </div>
+    </div>
+
+    <div id="mainLayout" class="container hidden">
+        <div class="sidebar">
+            <h3>Contract Articles</h3>
+            <div id="articlesList">
+                <div class="clause-item" data-article="1.5">
+                    <strong>Article 1.5</strong><br>
+                    <small>Drag Along Right</small>
+                </div>
+                <div class="clause-item" data-article="2.1">
+                    <strong>Article 2.1</strong><br>
+                    <small>Governance</small>
+                </div>
+                <div class="clause-item" data-article="3.6">
+                    <strong>Article 3.6</strong><br>
+                    <small>Tag Along Right</small>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 6px;">
+                <small><strong>Processing:</strong> Frontend-only for speed<br>
+                <strong>Features:</strong> Basic article highlighting + scroll</small>
+            </div>
+        </div>
+
+        <div class="main">
+            <div id="documentContent">
+                <!-- PDF content loads here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+
+        // Fast PDF processing - no backend calls
+        document.getElementById('processBtn').addEventListener('click', async function() {
+            const fileInput = document.getElementById('fileInput');
+            const uploadSection = document.getElementById('uploadSection');
+            const mainLayout = document.getElementById('mainLayout');
+            const documentContent = document.getElementById('documentContent');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const processBtn = document.getElementById('processBtn');
+            const progressBar = document.getElementById('progressBar');
+            const progressText = document.getElementById('progressText');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                alert('Please select a PDF file');
+                return;
+            }
+            
+            console.log('🚀 Fast processing started');
+            loadingIndicator.style.display = 'block';
+            processBtn.disabled = true;
+            
+            try {
+                const file = fileInput.files[0];
+                progressText.textContent = `Loading ${file.name}...`;
+                progressBar.style.width = '10%';
+                
+                const arrayBuffer = await file.arrayBuffer();
+                const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+                
+                console.log(`📄 PDF loaded: ${pdf.numPages} pages`);
+                progressText.textContent = `Processing ${pdf.numPages} pages...`;
+                progressBar.style.width = '20%';
+                
+                let allContent = '';
+                const totalPages = Math.min(pdf.numPages, 10); // Limit to first 10 pages for speed
+                
+                // Process pages quickly
+                for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+                    const progress = 20 + (pageNum / totalPages * 70);
+                    progressBar.style.width = progress + '%';
+                    progressText.textContent = `Page ${pageNum} of ${totalPages}...`;
+                    
+                    const page = await pdf.getPage(pageNum);
+                    const textContent = await page.getTextContent();
+                    let pageText = textContent.items.map(item => item.str).join(' ');
+                    
+                    // Fast highlighting - only essential articles
+                    pageText = pageText.replace(/\b1\.5\b/g, '<span class="article-highlight" data-article="1.5">1.5</span>');
+                    pageText = pageText.replace(/\b2\.1\b/g, '<span class="article-highlight" data-article="2.1">2.1</span>');
+                    pageText = pageText.replace(/\b3\.6\b/g, '<span class="article-highlight" data-article="3.6">3.6</span>');
+                    
+                    allContent += `
+                        <div class="page" id="page-${pageNum}">
+                            <div class="page-header">Page ${pageNum}</div>
+                            <div>${pageText}</div>
+                        </div>
+                    `;
+                }
+                
+                progressBar.style.width = '90%';
+                progressText.textContent = 'Finalizing...';
+                
+                documentContent.innerHTML = allContent;
+                
+                // Show results
+                progressBar.style.width = '100%';
+                progressText.textContent = 'Complete!';
+                
+                setTimeout(() => {
+                    uploadSection.classList.add('hidden');
+                    mainLayout.classList.remove('hidden');
+                }, 500);
+                
+                console.log('✅ Fast processing complete');
+                
+            } catch (error) {
+                console.error('❌ Error:', error);
+                documentContent.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                uploadSection.classList.add('hidden');
+                mainLayout.classList.remove('hidden');
+            } finally {
+                setTimeout(() => {
+                    loadingIndicator.style.display = 'none';
+                    processBtn.disabled = false;
+                }, 1000);
+            }
+        });
+        
+        // Fast click-to-scroll
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.clause-item')) {
+                const clauseItem = e.target.closest('.clause-item');
+                const articleNum = clauseItem.dataset.article;
+                
+                // Clear active states
+                document.querySelectorAll('.clause-item').forEach(item => item.classList.remove('active'));
+                clauseItem.classList.add('active');
+                
+                // Find and scroll to highlighted article
+                const target = document.querySelector(`[data-article="${articleNum}"]`);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    
+                    // Flash effect
+                    target.style.background = '#ff6b6b';
+                    setTimeout(() => target.style.background = 'yellow', 200);
+                    
+                    console.log(`✅ Scrolled to article ${articleNum}`);
+                } else {
+                    console.warn(`❌ Article ${articleNum} not found`);
+                }
+            }
+        });
+        
+        console.log('🚀 Fast version ready - no backend required');
+    </script>
+</body>
+</html>

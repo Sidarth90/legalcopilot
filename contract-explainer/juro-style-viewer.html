@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ContractIQ - Juro-Style Contract Review</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            /* Juro Colors */
+            --juro-purple: #6366f1;
+            --juro-purple-dark: #4f46e5;
+            --juro-purple-light: #e0e7ff;
+            --juro-green: #10b981;
+            --juro-red: #ef4444;
+            --juro-orange: #f59e0b;
+            --juro-gray-50: #f9fafb;
+            --juro-gray-100: #f3f4f6;
+            --juro-gray-200: #e5e7eb;
+            --juro-gray-300: #d1d5db;
+            --juro-gray-400: #9ca3af;
+            --juro-gray-500: #6b7280;
+            --juro-gray-600: #4b5563;
+            --juro-gray-700: #374151;
+            --juro-gray-800: #1f2937;
+            --juro-gray-900: #111827;
+            --juro-white: #ffffff;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+            line-height: 1.5;
+            color: var(--juro-gray-900);
+            background: var(--juro-gray-50);
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        /* Header - Juro Style */
+        .header {
+            background: var(--juro-white);
+            border-bottom: 1px solid var(--juro-gray-200);
+            padding: 0 2rem;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .logo {
+            width: 32px;
+            height: 32px;
+            background: linear-gradient(135deg, var(--juro-purple), var(--juro-purple-dark));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: white;
+            font-weight: 600;
+        }
+        
+        .brand {
+            font-size: 1.125rem;
+            font-weight: 700;
+            color: var(--juro-gray-900);
+            letter-spacing: -0.025em;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            border: none;
+            text-decoration: none;
+            letter-spacing: -0.025em;
+        }
+        
+        .btn-primary {
+            background: var(--juro-purple);
+            color: var(--juro-white);
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+        
+        .btn-primary:hover {
+            background: var(--juro-purple-dark);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-secondary {
+            background: var(--juro-white);
+            color: var(--juro-gray-700);
+            border: 1px solid var(--juro-gray-300);
+        }
+        
+        .btn-secondary:hover {
+            background: var(--juro-gray-50);
+            border-color: var(--juro-gray-400);
+        }
+        
+        /* Upload Section - Juro Style */
+        .upload-section {
+            min-height: calc(100vh - 64px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+        
+        .upload-container {
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+        }
+        
+        .upload-title {
+            font-size: 2.25rem;
+            font-weight: 800;
+            color: var(--juro-gray-900);
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.05em;
+            line-height: 1.2;
+        }
+        
+        .upload-subtitle {
+            font-size: 1.125rem;
+            color: var(--juro-gray-600);
+            margin-bottom: 2.5rem;
+            line-height: 1.6;
+        }
+        
+        .upload-area {
+            background: var(--juro-white);
+            border: 2px dashed var(--juro-gray-300);
+            border-radius: 12px;
+            padding: 2.5rem 1.5rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+        
+        .upload-area:hover,
+        .upload-area.dragover {
+            border-color: var(--juro-purple);
+            background: var(--juro-purple-light);
+        }
+        
+        .upload-icon {
+            width: 48px;
+            height: 48px;
+            margin: 0 auto 1rem;
+            background: var(--juro-gray-100);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+        
+        .upload-text {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--juro-gray-900);
+            margin-bottom: 0.5rem;
+        }
+        
+        .upload-hint {
+            font-size: 0.875rem;
+            color: var(--juro-gray-500);
+            margin-bottom: 1.5rem;
+        }
+        
+        .upload-btn {
+            background: var(--juro-purple);
+            color: var(--juro-white);
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.15s ease;
+        }
+        
+        .upload-btn:hover {
+            background: var(--juro-purple-dark);
+        }
+        
+        /* Main Layout - Juro Two-Panel Style */
+        .main-layout {
+            height: calc(100vh - 64px);
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            background: var(--juro-gray-50);
+        }
+        
+        /* Left Panel - Analysis Summary */
+        .analysis-panel {
+            background: var(--juro-white);
+            border-right: 1px solid var(--juro-gray-200);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .analysis-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--juro-gray-200);
+            background: var(--juro-white);
+        }
+        
+        .analysis-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--juro-gray-900);
+            margin-bottom: 0.25rem;
+            letter-spacing: -0.025em;
+        }
+        
+        .analysis-subtitle {
+            font-size: 0.875rem;
+            color: var(--juro-gray-500);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status-indicator {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--juro-green);
+        }
+        
+        /* Summary Cards */
+        .analysis-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+        
+        .summary-section {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--juro-gray-100);
+        }
+        
+        .summary-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--juro-gray-900);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .risk-overview {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .risk-card {
+            background: var(--juro-gray-50);
+            border-radius: 8px;
+            padding: 1rem;
+            text-align: center;
+        }
+        
+        .risk-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+        
+        .risk-number.high { color: var(--juro-red); }
+        .risk-number.medium { color: var(--juro-orange); }
+        .risk-number.low { color: var(--juro-gray-500); }
+        
+        .risk-label {
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--juro-gray-600);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        /* Numbered Highlights */
+        .highlights-section {
+            padding: 1.5rem;
+        }
+        
+        .highlights-title {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: var(--juro-gray-900);
+            margin-bottom: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .highlight-item {
+            display: flex;
+            gap: 0.75rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            margin-bottom: 0.5rem;
+        }
+        
+        .highlight-item:hover {
+            background: var(--juro-gray-50);
+        }
+        
+        .highlight-item.active {
+            background: var(--juro-purple-light);
+            border: 1px solid var(--juro-purple);
+        }
+        
+        .highlight-number {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--juro-white);
+            flex-shrink: 0;
+        }
+        
+        .highlight-number.high { background: var(--juro-red); }
+        .highlight-number.medium { background: var(--juro-orange); }
+        .highlight-number.low { background: var(--juro-gray-400); }
+        
+        .highlight-content {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .highlight-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--juro-gray-900);
+            margin-bottom: 0.25rem;
+            line-height: 1.4;
+        }
+        
+        .highlight-text {
+            font-size: 0.75rem;
+            color: var(--juro-gray-600);
+            font-style: italic;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        
+        .highlight-page {
+            font-size: 0.625rem;
+            color: var(--juro-gray-400);
+            font-weight: 500;
+            margin-top: 0.25rem;
+        }
+        
+        /* Right Panel - PDF Viewer */
+        .pdf-panel {
+            display: flex;
+            flex-direction: column;
+            background: var(--juro-gray-100);
+        }
+        
+        .pdf-header {
+            background: var(--juro-white);
+            border-bottom: 1px solid var(--juro-gray-200);
+            padding: 1rem 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 56px;
+        }
+        
+        .pdf-info {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .pdf-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--juro-gray-900);
+        }
+        
+        .pdf-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .control-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--juro-gray-300);
+            background: var(--juro-white);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-size: 0.75rem;
+            color: var(--juro-gray-600);
+        }
+        
+        .control-btn:hover {
+            background: var(--juro-gray-50);
+            border-color: var(--juro-gray-400);
+        }
+        
+        .zoom-display {
+            font-size: 0.75rem;
+            color: var(--juro-gray-500);
+            font-weight: 500;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        /* PDF Viewer Container */
+        .pdf-viewer {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: auto;
+            background: var(--juro-gray-200);
+            display: flex;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+        
+        .pdf-container {
+            background: var(--juro-white);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            border-radius: 8px;
+            overflow: hidden;
+            max-width: 100%;
+            width: fit-content;
+            position: relative;
+        }
+        
+        .pdf-page {
+            background: var(--juro-white);
+            position: relative;
+            border-bottom: 1px solid var(--juro-gray-200);
+        }
+        
+        .pdf-page:last-child {
+            border-bottom: none;
+        }
+        
+        .pdf-page canvas {
+            display: block;
+            width: 100%;
+            height: auto;
+        }
+        
+        /* Text Selection Layer */
+        .text-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            opacity: 0;
+            line-height: 1.0;
+        }
+        
+        .text-layer > span {
+            color: transparent;
+            position: absolute;
+            white-space: pre;
+            cursor: text;
+            transform-origin: 0% 0%;
+        }
+        
+        /* Highlight Overlays */
+        .highlight-overlay {
+            position: absolute;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: var(--juro-white);
+        }
+        
+        .highlight-overlay.high {
+            background: rgba(239, 68, 68, 0.3);
+            border: 2px solid var(--juro-red);
+        }
+        
+        .highlight-overlay.medium {
+            background: rgba(245, 158, 11, 0.3);
+            border: 2px solid var(--juro-orange);
+        }
+        
+        .highlight-overlay.low {
+            background: rgba(107, 114, 128, 0.3);
+            border: 2px solid var(--juro-gray-500);
+        }
+        
+        .highlight-overlay:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .highlight-overlay.active {
+            transform: scale(1.05);
+            box-shadow: 0 8px 25px -5px rgba(0, 0, 0, 0.2);
+            animation: highlightPulse 0.6s ease-in-out;
+        }
+        
+        /* Processing Overlay */
+        .processing-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        
+        .processing-content {
+            text-align: center;
+            max-width: 400px;
+        }
+        
+        .processing-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--juro-gray-200);
+            border-top-color: var(--juro-purple);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+        
+        .processing-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--juro-gray-900);
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.025em;
+        }
+        
+        .processing-subtitle {
+            font-size: 0.875rem;
+            color: var(--juro-gray-500);
+        }
+        
+        /* Animations */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        @keyframes highlightPulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+        
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .main-layout {
+                grid-template-columns: 350px 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .main-layout {
+                grid-template-columns: 1fr;
+                grid-template-rows: 50vh 1fr;
+            }
+            
+            .brand {
+                display: none;
+            }
+        }
+        
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="logo-section">
+            <div class="logo">C</div>
+            <div class="brand">ContractIQ</div>
+        </div>
+        <div class="header-actions">
+            <button id="newContractBtn" class="btn btn-secondary hidden">
+                New Contract
+            </button>
+            <button id="shareBtn" class="btn btn-primary hidden">
+                Share Results
+            </button>
+        </div>
+    </header>
+
+    <!-- Upload Section -->
+    <div id="uploadSection" class="upload-section">
+        <div class="upload-container">
+            <h1 class="upload-title">AI Contract Review</h1>
+            <p class="upload-subtitle">
+                Upload your contract and get instant professional analysis with numbered highlights
+            </p>
+            
+            <div id="uploadArea" class="upload-area">
+                <div class="upload-icon">📄</div>
+                <div class="upload-text">Drop your contract here</div>
+                <div class="upload-hint">or click to browse files</div>
+                <button id="uploadBtn" class="upload-btn">Choose File</button>
+                <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+            </div>
+        </div>
+    </div>
+
+    <!-- Processing Overlay -->
+    <div id="processingOverlay" class="processing-overlay hidden">
+        <div class="processing-content">
+            <div class="processing-spinner"></div>
+            <h3 class="processing-title">Analyzing Contract</h3>
+            <p class="processing-subtitle">Our AI is reviewing your document for risks and key terms</p>
+        </div>
+    </div>
+
+    <!-- Main Layout -->
+    <div id="mainLayout" class="main-layout hidden">
+        <!-- Left Panel - Analysis -->
+        <div class="analysis-panel">
+            <div class="analysis-header">
+                <h2 class="analysis-title">Contract Analysis</h2>
+                <div class="analysis-subtitle">
+                    <div class="status-indicator"></div>
+                    <span id="analysisStatus">Analysis complete</span>
+                </div>
+            </div>
+            
+            <div class="analysis-content">
+                <!-- Risk Overview -->
+                <div class="summary-section">
+                    <h3 class="summary-title">Risk Overview</h3>
+                    <div class="risk-overview">
+                        <div class="risk-card">
+                            <div id="highRiskCount" class="risk-number high">0</div>
+                            <div class="risk-label">High Risk</div>
+                        </div>
+                        <div class="risk-card">
+                            <div id="mediumRiskCount" class="risk-number medium">0</div>
+                            <div class="risk-label">Medium Risk</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Numbered Highlights -->
+                <div class="highlights-section">
+                    <h3 class="highlights-title">Key Issues Found</h3>
+                    <div id="highlightsList">
+                        <!-- Highlights will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel - PDF Viewer -->
+        <div class="pdf-panel">
+            <div class="pdf-header">
+                <div class="pdf-info">
+                    <span>📄</span>
+                    <span id="pdfTitle" class="pdf-title">Contract Document</span>
+                </div>
+                <div class="pdf-controls">
+                    <button class="control-btn" onclick="zoomOut()" title="Zoom Out">−</button>
+                    <span class="zoom-display" id="zoomDisplay">100%</span>
+                    <button class="control-btn" onclick="zoomIn()" title="Zoom In">+</button>
+                    <button class="control-btn" onclick="fitWidth()" title="Fit Width">⚡</button>
+                </div>
+            </div>
+            
+            <div class="pdf-viewer" id="pdfViewer">
+                <div class="pdf-container" id="pdfContainer">
+                    <!-- PDF pages will be rendered here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        console.log('ContractIQ Juro-Style Viewer loading...');
+        
+        // Initialize PDF.js
+        if (typeof pdfjsLib !== 'undefined') {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        }
+        
+        // Global state
+        let currentPDF = null;
+        let currentZoom = 1.3;
+        let highlights = [];
+        let activeHighlight = null;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM loaded, initializing...');
+            
+            const uploadArea = document.getElementById('uploadArea');
+            const uploadBtn = document.getElementById('uploadBtn');
+            const fileInput = document.getElementById('fileInput');
+            
+            // Upload handlers
+            uploadArea.addEventListener('click', () => fileInput.click());
+            uploadBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                fileInput.click();
+            });
+            
+            uploadArea.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                uploadArea.classList.add('dragover');
+            });
+            
+            uploadArea.addEventListener('dragleave', () => {
+                uploadArea.classList.remove('dragover');
+            });
+            
+            uploadArea.addEventListener('drop', (e) => {
+                e.preventDefault();
+                uploadArea.classList.remove('dragover');
+                if (e.dataTransfer.files.length > 0) {
+                    processFile(e.dataTransfer.files[0]);
+                }
+            });
+            
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    processFile(e.target.files[0]);
+                }
+            });
+            
+            // Other buttons
+            document.getElementById('newContractBtn')?.addEventListener('click', resetInterface);
+            document.getElementById('shareBtn')?.addEventListener('click', shareResults);
+        });
+        
+        // Process uploaded file
+        async function processFile(file) {
+            if (!file.type.includes('pdf')) {
+                alert('Please upload a PDF file.');
+                return;
+            }
+            
+            try {
+                showProcessing();
+                
+                // Load PDF
+                const pdfDoc = await loadPDF(file);
+                currentPDF = pdfDoc;
+                
+                // Extract text and analyze
+                const fullText = await extractFullText(pdfDoc);
+                const foundHighlights = findContractHighlights(fullText);
+                highlights = foundHighlights;
+                
+                // Render results
+                await renderResults(file.name, pdfDoc, foundHighlights);
+                
+                setTimeout(() => {
+                    hideProcessing();
+                    showMainInterface();
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error processing file:', error);
+                hideProcessing();
+                alert('Error processing file: ' + error.message);
+            }
+        }
+        
+        // Load PDF document
+        function loadPDF(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async function() {
+                    try {
+                        const pdf = await pdfjsLib.getDocument(new Uint8Array(this.result)).promise;
+                        resolve(pdf);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = () => reject(new Error('Failed to read file'));
+                reader.readAsArrayBuffer(file);
+            });
+        }
+        
+        // Extract text from all pages
+        async function extractFullText(pdf) {
+            let fullText = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items.map(item => item.str).join(' ');
+                fullText += pageText + '\n\n';
+            }
+            return fullText;
+        }
+        
+        // Enhanced highlight detection
+        function findContractHighlights(text) {
+            const patterns = [
+                {
+                    regex: /unlimited\s+liability/gi,
+                    title: 'Unlimited Liability Risk',
+                    severity: 'high',
+                    description: 'You could be held responsible for unlimited damages'
+                },
+                {
+                    regex: /automatic\s+renewal/gi,
+                    title: 'Automatic Renewal',
+                    severity: 'medium',
+                    description: 'Contract renews without your explicit consent'
+                },
+                {
+                    regex: /drag.?along\s+rights?/gi,
+                    title: 'Drag-Along Rights',
+                    severity: 'high',
+                    description: 'Majority shareholders can force you to sell'
+                },
+                {
+                    regex: /non.?compete/gi,
+                    title: 'Non-Compete Restriction',
+                    severity: 'medium',
+                    description: 'Limits your ability to work with competitors'
+                },
+                {
+                    regex: /indemnif(y|ication)/gi,
+                    title: 'Indemnification Clause',
+                    severity: 'medium',
+                    description: 'You may need to cover legal costs for other party'
+                },
+                {
+                    regex: /liquidation\s+preference/gi,
+                    title: 'Liquidation Preference',
+                    severity: 'high',
+                    description: 'Affects payout order when company is sold'
+                },
+                {
+                    regex: /at.?will\s+employment/gi,
+                    title: 'At-Will Employment',
+                    severity: 'low',
+                    description: 'Can be terminated without cause'
+                },
+                {
+                    regex: /vesting\s+(schedule|period)/gi,
+                    title: 'Vesting Requirements',
+                    severity: 'medium',
+                    description: 'Stock options vest over time with conditions'
+                }
+            ];
+            
+            const foundHighlights = [];
+            
+            patterns.forEach((pattern, patternIndex) => {
+                pattern.regex.lastIndex = 0;
+                let match;
+                let matchCount = 0;
+                
+                while ((match = pattern.regex.exec(text)) !== null && matchCount < 3) {
+                    const contextStart = Math.max(0, match.index - 100);
+                    const contextEnd = Math.min(text.length, match.index + match[0].length + 100);
+                    const context = text.substring(contextStart, contextEnd);
+                    
+                    foundHighlights.push({
+                        id: `highlight-${patternIndex}-${matchCount}`,
+                        number: foundHighlights.length + 1,
+                        title: pattern.title,
+                        severity: pattern.severity,
+                        description: pattern.description,
+                        matchText: match[0],
+                        context: context,
+                        position: match.index,
+                        page: null // Will be determined during rendering
+                    });
+                    
+                    matchCount++;
+                    
+                    if (pattern.regex.lastIndex === match.index) {
+                        pattern.regex.lastIndex++;
+                    }
+                }
+            });
+            
+            // Sort by position in document
+            foundHighlights.sort((a, b) => a.position - b.position);
+            
+            // Renumber after sorting
+            foundHighlights.forEach((highlight, index) => {
+                highlight.number = index + 1;
+            });
+            
+            console.log(`Found ${foundHighlights.length} highlights:`, foundHighlights);
+            return foundHighlights;
+        }
+        
+        // Render all results
+        async function renderResults(filename, pdf, highlights) {
+            document.getElementById('pdfTitle').textContent = filename;
+            document.getElementById('analysisStatus').textContent = 
+                `${highlights.length} issues found • ${pdf.numPages} pages`;
+            
+            // Update risk counts
+            const highCount = highlights.filter(h => h.severity === 'high').length;
+            const mediumCount = highlights.filter(h => h.severity === 'medium').length;
+            
+            document.getElementById('highRiskCount').textContent = highCount;
+            document.getElementById('mediumRiskCount').textContent = mediumCount;
+            
+            // Render highlights list
+            renderHighlightsList(highlights);
+            
+            // Render PDF with highlights
+            await renderPDFWithHighlights(pdf, highlights);
+            
+            updateZoomDisplay();
+        }
+        
+        // Render highlights list in left panel
+        function renderHighlightsList(highlights) {
+            const container = document.getElementById('highlightsList');
+            
+            container.innerHTML = highlights.map(highlight => `
+                <div class="highlight-item" data-highlight-id="${highlight.id}" onclick="jumpToHighlight('${highlight.id}')">
+                    <div class="highlight-number ${highlight.severity}">${highlight.number}</div>
+                    <div class="highlight-content">
+                        <div class="highlight-title">${highlight.title}</div>
+                        <div class="highlight-text">"${highlight.matchText}"</div>
+                        <div class="highlight-page">Page ${highlight.page || '?'}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Render PDF with highlight overlays
+        async function renderPDFWithHighlights(pdf, highlights) {
+            const container = document.getElementById('pdfContainer');
+            container.innerHTML = '';
+            
+            let currentTextPos = 0;
+            
+            for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                const page = await pdf.getPage(pageNum);
+                const viewport = page.getViewport({ scale: currentZoom });
+                
+                // Create page container
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'pdf-page';
+                pageDiv.style.width = viewport.width + 'px';
+                pageDiv.style.height = viewport.height + 'px';
+                pageDiv.setAttribute('data-page', pageNum);
+                
+                // Render PDF to canvas
+                const canvas = document.createElement('canvas');
+                canvas.width = viewport.width;
+                canvas.height = viewport.height;
+                const ctx = canvas.getContext('2d');
+                
+                await page.render({ canvasContext: ctx, viewport: viewport }).promise;
+                pageDiv.appendChild(canvas);
+                
+                // Add text layer for selection
+                const textLayer = document.createElement('div');
+                textLayer.className = 'text-layer';
+                textLayer.style.width = viewport.width + 'px';
+                textLayer.style.height = viewport.height + 'px';
+                
+                const textContent = await page.getTextContent();
+                pdfjsLib.renderTextLayer({
+                    textContentSource: textContent,
+                    container: textLayer,
+                    viewport: viewport,
+                    textDivs: []
+                });
+                
+                pageDiv.appendChild(textLayer);
+                
+                // Get page text and add highlights
+                const pageText = textContent.items.map(item => item.str).join(' ');
+                const pageStartPos = currentTextPos;
+                const pageEndPos = currentTextPos + pageText.length;
+                
+                // Find highlights on this page
+                const pageHighlights = highlights.filter(h => 
+                    h.position >= pageStartPos && h.position < pageEndPos
+                );
+                
+                // Update highlight page numbers
+                pageHighlights.forEach(h => h.page = pageNum);
+                
+                // Add highlight overlays
+                addHighlightOverlays(pageDiv, textContent, viewport, pageHighlights, pageText, pageStartPos);
+                
+                container.appendChild(pageDiv);
+                currentTextPos = pageEndPos + 2; // +2 for page break
+            }
+            
+            // Update highlights list with page numbers
+            renderHighlightsList(highlights);
+        }
+        
+        // Add highlight overlays to page
+        function addHighlightOverlays(pageDiv, textContent, viewport, pageHighlights, pageText, pageStartPos) {
+            pageHighlights.forEach(highlight => {
+                const relativePos = highlight.position - pageStartPos;
+                
+                // Find text items that match this position
+                let currentPos = 0;
+                const matchingItems = [];
+                
+                for (let i = 0; i < textContent.items.length; i++) {
+                    const item = textContent.items[i];
+                    const itemStart = currentPos;
+                    const itemEnd = currentPos + item.str.length;
+                    
+                    if (itemStart <= relativePos && itemEnd >= relativePos) {
+                        matchingItems.push({
+                            item: item,
+                            transform: item.transform,
+                            startPos: itemStart,
+                            endPos: itemEnd
+                        });
+                    }
+                    
+                    currentPos += item.str.length + 1;
+                }
+                
+                if (matchingItems.length > 0) {
+                    // Calculate highlight bounds
+                    const bounds = calculateHighlightBounds(matchingItems, viewport);
+                    if (bounds) {
+                        createHighlightOverlay(pageDiv, bounds, highlight);
+                    }
+                }
+            });
+        }
+        
+        // Calculate highlight bounding box
+        function calculateHighlightBounds(items, viewport) {
+            if (items.length === 0) return null;
+            
+            let minX = Infinity, minY = Infinity;
+            let maxX = -Infinity, maxY = -Infinity;
+            
+            items.forEach(({ item, transform }) => {
+                const fontSize = Math.sqrt(transform[2] * transform[2] + transform[3] * transform[3]);
+                const x = transform[4];
+                const y = viewport.height - transform[5];
+                const width = item.width || (item.str.length * fontSize * 0.6);
+                const height = fontSize * 1.2;
+                
+                minX = Math.min(minX, x);
+                minY = Math.min(minY, y - height);
+                maxX = Math.max(maxX, x + width);
+                maxY = Math.max(maxY, y);
+            });
+            
+            return {
+                x: minX - 4,
+                y: minY - 2,
+                width: maxX - minX + 8,
+                height: maxY - minY + 4
+            };
+        }
+        
+        // Create highlight overlay element
+        function createHighlightOverlay(pageDiv, bounds, highlight) {
+            const overlay = document.createElement('div');
+            overlay.className = `highlight-overlay ${highlight.severity}`;
+            overlay.setAttribute('data-highlight-id', highlight.id);
+            
+            overlay.style.left = bounds.x + 'px';
+            overlay.style.top = bounds.y + 'px';
+            overlay.style.width = bounds.width + 'px';
+            overlay.style.height = bounds.height + 'px';
+            
+            overlay.textContent = highlight.number;
+            
+            overlay.addEventListener('click', () => jumpToHighlight(highlight.id));
+            
+            pageDiv.appendChild(overlay);
+        }
+        
+        // Jump to specific highlight
+        function jumpToHighlight(highlightId) {
+            // Remove active class from all items
+            document.querySelectorAll('.highlight-item.active, .highlight-overlay.active').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Add active class to selected items
+            document.querySelector(`[data-highlight-id="${highlightId}"]`).classList.add('active');
+            document.querySelectorAll(`[data-highlight-id="${highlightId}"]`).forEach(el => {
+                el.classList.add('active');
+            });
+            
+            // Scroll to highlight in PDF
+            const overlay = document.querySelector(`.highlight-overlay[data-highlight-id="${highlightId}"]`);
+            if (overlay) {
+                overlay.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+            
+            activeHighlight = highlightId;
+        }
+        
+        // Zoom functions
+        async function zoomIn() {
+            currentZoom = Math.min(2.5, currentZoom + 0.2);
+            if (currentPDF && highlights) {
+                await renderPDFWithHighlights(currentPDF, highlights);
+                updateZoomDisplay();
+            }
+        }
+        
+        async function zoomOut() {
+            currentZoom = Math.max(0.8, currentZoom - 0.2);
+            if (currentPDF && highlights) {
+                await renderPDFWithHighlights(currentPDF, highlights);
+                updateZoomDisplay();
+            }
+        }
+        
+        async function fitWidth() {
+            currentZoom = 1.3;
+            if (currentPDF && highlights) {
+                await renderPDFWithHighlights(currentPDF, highlights);
+                updateZoomDisplay();
+            }
+        }
+        
+        function updateZoomDisplay() {
+            document.getElementById('zoomDisplay').textContent = Math.round(currentZoom * 100) + '%';
+        }
+        
+        // UI functions
+        function showProcessing() {
+            document.getElementById('uploadSection').classList.add('hidden');
+            document.getElementById('processingOverlay').classList.remove('hidden');
+        }
+        
+        function hideProcessing() {
+            document.getElementById('processingOverlay').classList.add('hidden');
+        }
+        
+        function showMainInterface() {
+            document.getElementById('mainLayout').classList.remove('hidden');
+            document.getElementById('newContractBtn').classList.remove('hidden');
+            document.getElementById('shareBtn').classList.remove('hidden');
+        }
+        
+        function resetInterface() {
+            document.getElementById('mainLayout').classList.add('hidden');
+            document.getElementById('uploadSection').classList.remove('hidden');
+            document.getElementById('newContractBtn').classList.add('hidden');
+            document.getElementById('shareBtn').classList.add('hidden');
+            document.getElementById('fileInput').value = '';
+            currentPDF = null;
+            highlights = [];
+        }
+        
+        function shareResults() {
+            navigator.clipboard.writeText(window.location.href).then(() => {
+                alert('Results link copied to clipboard!');
+            });
+        }
+        
+        console.log('ContractIQ Juro-Style Viewer loaded successfully');
+    </script>
+</body>
+</html>
