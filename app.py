@@ -120,20 +120,35 @@ def index():
 @app.route('/working-pdf-highlighter.html')
 def working_pdf_highlighter():
     """Working PDF highlighter with three-panel layout"""
-    with open('working-pdf-highlighter.html', 'r', encoding='utf-8') as f:
-        return f.read()
+    try:
+        file_path = os.path.join(os.path.dirname(__file__), 'working-pdf-highlighter.html')
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return content, 200, {'Content-Type': 'text/html'}
+    except FileNotFoundError:
+        return "working-pdf-highlighter.html not found", 404
 
 @app.route('/semantic-clause-highlighter.html') 
 def semantic_clause_highlighter():
     """Semantic clause highlighter"""
-    with open('semantic-clause-highlighter.html', 'r', encoding='utf-8') as f:
-        return f.read()
+    try:
+        file_path = os.path.join(os.path.dirname(__file__), 'semantic-clause-highlighter.html')
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return content, 200, {'Content-Type': 'text/html'}
+    except FileNotFoundError:
+        return "semantic-clause-highlighter.html not found", 404
 
 @app.route('/integrated-highlighter.html')
 def integrated_highlighter():
     """Integrated frontend-backend highlighter"""
-    with open('integrated-highlighter.html', 'r', encoding='utf-8') as f:
-        return f.read()
+    try:
+        file_path = os.path.join(os.path.dirname(__file__), 'integrated-highlighter.html')
+        with open(file_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        return content, 200, {'Content-Type': 'text/html'}
+    except FileNotFoundError:
+        return "integrated-highlighter.html not found", 404
 
 @app.route('/api/analyze', methods=['POST'])
 def analyze_contract():
